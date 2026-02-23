@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-dark">Hospital Facility Management</h2>
+    <a href="{% url 'staff_dashboard' %}" class="btn btn-outline-secondary">Back to Dashboard</a>
+</div>
+
+<div class="row">
+    {% for room in rooms %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="m-0 font-weight-bold text-primary">Room {{ room.room_number }} ({{ room.type }})</h5>
+                <small class="text-muted">{{ room.dept.name }} Department</small>
+            </div>
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">Beds:</h6>
+                <div class="list-group">
+                    {% for bed in room.beds.all %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i
+                                class="fas fa-bed me-2 {% if bed.status %}text-success{% else %}text-danger{% endif %}"></i>
+                            Bed {{ bed.bed_number }}
+                        </div>
+                        <a href="{% url 'toggle_bed_status' bed.pk %}"
+                            class="btn btn-sm {% if bed.status %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                            Mark as {% if bed.status %}Occupied{% else %}Available{% endif %}
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer bg-light small">
+                Charge: ${{ room.room_charge_per_day }}/day
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <p class="text-muted">No rooms configured in the system yet.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

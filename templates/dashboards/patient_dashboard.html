@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-user-circle fa-4x text-primary"></i>
+                </div>
+                <h5 class="fw-bold">{{ user.get_full_name }}</h5>
+                <p class="text-muted small">Patient Profile</p>
+                <hr>
+                <div class="text-start">
+                    <p class="mb-1 small"><strong>Blood Group:</strong> {{ user.patient_profile.blood_group }}</p>
+                    <p class="mb-1 small"><strong>Email:</strong> {{ user.email }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-9">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card bg-primary text-white h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Appointments</h5>
+                        <p class="card-text display-6">{{ appointments_count }}</p>
+                        <a href="{% url 'book_appointment' %}" class="text-white small">Book Now <i
+                                class="fas fa-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card bg-success text-white h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Lab Reports</h5>
+                        <p class="card-text display-6">{{ lab_reports_count }}</p>
+                        <a href="{% url 'lab_report_list' %}" class="text-white small">View All <i
+                                class="fas fa-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card bg-info text-white h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Due</h5>
+                        <p class="card-text display-6">${{ total_due }}</p>
+                        <a href="#" class="text-white small">Pay Now <i class="fas fa-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Upcoming Appointments</h6>
+            </div>
+            <div class="card-body">
+                {% if upcoming_appointments %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Doctor</th>
+                                <th>Date & Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appt in upcoming_appointments %}
+                            <tr>
+                                <td>Dr. {{ appt.doctor.user.last_name }}</td>
+                                <td>{{ appt.appointment_date|date:"M d, Y H:i" }}</td>
+                                <td><span
+                                        class="badge bg-{% if appt.status == 'PENDING' %}warning{% else %}success{% endif %}">{{appt.status}}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-3x text-light mb-3"></i>
+                    <p class="text-muted">No upcoming appointments found.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-lg border-0 rounded-lg mt-5">
+            <div class="card-header bg-success text-white text-center">
+                <h3 class="font-weight-light my-4">Patient Registration</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="small mb-1">Username</label>
+                            <input class="form-control" name="username" type="text" placeholder="Username" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small mb-1">Email</label>
+                            <input class="form-control" name="email" type="email" placeholder="Email" required />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="small mb-1">Password</label>
+                            <input class="form-control" name="password" type="password" placeholder="Password"
+                                required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small mb-1">Confirm Password</label>
+                            <input class="form-control" type="password" placeholder="Confirm Password" required />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="small mb-1">First Name</label>
+                            <input class="form-control" name="first_name" type="text" placeholder="First Name"
+                                required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small mb-1">Last Name</label>
+                            <input class="form-control" name="last_name" type="text" placeholder="Last Name" required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small mb-1">Address</label>
+                        <textarea class="form-control" name="address" placeholder="Address" required></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="small mb-1">City</label>
+                            <input class="form-control" name="city" type="text" placeholder="City" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small mb-1">Blood Group</label>
+                            <select class="form-control" name="blood_group">
+                                <option value="">Select Blood Group</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-4 mb-0">
+                        <button class="btn btn-success w-100" type="submit">Create Account</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center py-3">
+                <div class="small"><a href="{% url 'login' %}">Have an account? Go to login</a></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

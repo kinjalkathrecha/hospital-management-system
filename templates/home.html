@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <div class="text-center mt-5">
+        <h1 class="display-4 fw-bold text-primary">Hospital Management System</h1>
+        <p class="lead text-muted">A modern solution for healthcare management</p>
+
+        <div class="row mt-5">
+            <div class="col-md-3 mb-4">
+                <div class="card h-100 shadow-sm" style="cursor:pointer" onclick="window.location.href='{% url 'admin_dashboard' %}';"
+                    role="button">
+                    <div class="card-body text-center p-4">
+                        <div class="icon-circle bg-primary-soft mb-3">
+                            <i class="fas fa-shield-alt fa-2x text-primary"></i>
+                        </div>
+                        <h4 class="fw-bold">Admin</h4>
+                        <p class="text-muted small">Manage doctors, staff, and hospital settings</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 mb-4">
+                <div class="card h-100 shadow-sm" style="cursor:pointer"
+                    onclick="window.location.href='{% url 'register_patient' %}';" role="button">
+                    <div class="card-body text-center p-4">
+                        <div class="icon-circle bg-success-soft mb-3">
+                            <i class="fas fa-user-injured fa-2x text-success"></i>
+                        </div>
+                        <h4 class="fw-bold">Patient</h4>
+                        <p class="text-muted small">Register and book appointments with top doctors</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 mb-4">
+                <div class="card h-100 shadow-sm" style="cursor:pointer"
+                    onclick="window.location.href='{% url 'register_doctor' %}';" role="button">
+                    <div class="card-body text-center p-4">
+                        <div class="icon-circle bg-danger-soft mb-3">
+                            <i class="fas fa-user-md fa-2x text-danger"></i>
+                        </div>
+                        <h4 class="fw-bold">Doctor</h4>
+                        <p class="text-muted small">Join our medical team and manage your patients</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 mb-4">
+                <div class="card h-100 shadow-sm" style="cursor:pointer"
+                    onclick="window.location.href='{% url 'register_staff' %}';" role="button">
+                    <div class="card-body text-center p-4">
+                        <div class="icon-circle bg-warning-soft mb-3">
+                            <i class="fas fa-user-tie fa-2x text-warning"></i>
+                        </div>
+                        <h4 class="fw-bold">Staff</h4>
+                        <p class="text-muted small">Efficiently manage hospital records and operations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if not user.is_authenticated %}
+        <div class="mt-4 py-4">
+            <p class="text-muted">Already have an account? <a href="{% url 'login' %}"
+                    class="btn btn-outline-primary ms-2 px-4">Login here</a></p>
+        </div>
+        {% else %}
+        <div class="mt-4 py-4">
+            <a href="{% if user.role == 'PATIENT' %}{% url 'patient_dashboard' %}{% elif user.role == 'DOCTOR' %}{% url 'doctor_dashboard' %}{% elif user.role == 'STAFF' %}{% url 'staff_dashboard' %}{% else %}/admin/{% endif %}"
+                class="btn btn-primary px-5 py-3 fw-bold shadow">
+                <i class="fas fa-columns me-2"></i>Go to My Dashboard
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .bg-primary-soft {
+        background-color: rgba(78, 115, 223, 0.1);
+    }
+
+    .bg-success-soft {
+        background-color: rgba(28, 200, 138, 0.1);
+    }
+
+    .bg-danger-soft {
+        background-color: rgba(231, 74, 59, 0.1);
+    }
+
+    .bg-warning-soft {
+        background-color: rgba(246, 194, 62, 0.1);
+    }
+
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+
+    .card {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .card:hover {
+        transform: translateY(-10px);
+    }
+</style>
+
+<style>
+    .card:hover {
+        transform: translateY(-5px);
+        transition: 0.3s;
+    }
+</style>
+{% endblock %}
