@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow border-0 mt-5">
+            <div class="card-header bg-danger text-white py-3 text-center">
+                <h4 class="mb-0">Confirm Delete</h4>
+            </div>
+            <div class="card-body p-4 text-center">
+                <p class="lead">Are you sure you want to delete <strong>Room {{ object.room_number }}</strong>?</p>
+                <div class="alert alert-warning small">
+                    <i class="fas fa-exclamation-triangle me-2"></i> This will also remove all beds associated with this
+                    room.
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-center gap-2 mt-4">
+                        <a href="{% url 'room_list' %}" class="btn btn-outline-secondary">No, Keep it</a>
+                        <button type="submit" class="btn btn-danger px-4">Yes, Delete Room</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

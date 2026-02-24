@@ -66,7 +66,7 @@
         </div>
         {% else %}
         <div class="mt-4 py-4">
-            <a href="{% if user.role == 'PATIENT' %}{% url 'patient_dashboard' %}{% elif user.role == 'DOCTOR' %}{% url 'doctor_dashboard' %}{% elif user.role == 'STAFF' %}{% url 'staff_dashboard' %}{% else %}/admin/{% endif %}"
+            <a href="{% if user.role == 'PATIENT' %}{% url 'patient_dashboard' %}{% elif user.role == 'DOCTOR' %}{% url 'doctor_dashboard' %}{% elif user.role == 'STAFF' %}{% url 'staff_dashboard' %}{% else %}{% url 'admin_dashboard' %}{% endif %}"
                 class="btn btn-primary px-5 py-3 fw-bold shadow">
                 <i class="fas fa-columns me-2"></i>Go to My Dashboard
             </a>

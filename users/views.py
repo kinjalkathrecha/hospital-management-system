@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.mixins import LoginRequiredMixin , UserPassesTestMixin
@@ -64,6 +65,20 @@ class StaffRegistrationView(CreateView):
     def form_valid(self, form):
         user = form.save()
         login(self.request, user)
+        return redirect(self.success_url)
+
+class AdminAddDoctorView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = User
+    form_class = DoctorRegistrationForm
+    template_name = 'register_doctor.html'
+    success_url = reverse_lazy('admin_dashboard')
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.role == 'ADMIN'
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, 'Doctor registered successfully!')
         return redirect(self.success_url)
 
 #dashboards
