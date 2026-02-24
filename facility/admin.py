@@ -27,7 +27,15 @@ class PaymentAdmin(admin.ModelAdmin):
 
 @admin.register(Staff)
 class StaffAdmin(admin.ModelAdmin):
-    list_display = ('name', 'phone', 'salary')
+    list_display = ('get_full_name', 'get_phone', 'salary')
+
+    def get_full_name(self, obj):
+        return obj.user.get_full_name()
+    get_full_name.short_description = 'Name'
+
+    def get_phone(self, obj):
+        return obj.user.phone
+    get_phone.short_description = 'Phone'
 
 @admin.register(StaffAssignment)
 class StaffAssignmentAdmin(admin.ModelAdmin):

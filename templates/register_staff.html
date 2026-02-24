@@ -10,36 +10,39 @@
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {{ form.errors }}
+                    </div>
+                    {% endif %}
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="small mb-1">Username</label>
-                            <input class="form-control" name="username" type="text" placeholder="Username" required />
+                            {{ form.username }}
                         </div>
                         <div class="col-md-6">
                             <label class="small mb-1">Email</label>
-                            <input class="form-control" name="email" type="email" placeholder="Email" required />
+                            {{ form.email }}
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="small mb-1">Password</label>
-                            <input class="form-control" name="password" type="password" placeholder="Password"
-                                required />
+                            {{ form.password1 }}
                         </div>
                         <div class="col-md-6">
                             <label class="small mb-1">Confirm Password</label>
-                            <input class="form-control" type="password" placeholder="Confirm Password" required />
+                            {{ form.password2 }}
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="small mb-1">First Name</label>
-                            <input class="form-control" name="first_name" type="text" placeholder="First Name"
-                                required />
+                            {{ form.first_name }}
                         </div>
                         <div class="col-md-6">
                             <label class="small mb-1">Last Name</label>
-                            <input class="form-control" name="last_name" type="text" placeholder="Last Name" required />
+                            {{ form.last_name }}
                         </div>
                     </div>
                     <div class="mt-4 mb-0">

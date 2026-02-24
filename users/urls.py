@@ -8,7 +8,6 @@ from .views import (
     UserViewSet
 )
 
-
 urlpatterns = [
     path('', HomeView.as_view(), name='home'),
     path('login/', UserLoginView.as_view(), name='login'),

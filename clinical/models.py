@@ -1,11 +1,12 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 # Department model
 class Department(models.Model):
     name = models.CharField(max_length=100)
     floor = models.IntegerField()
-    hod = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='headed_departments')
+    hod = models.ForeignKey('users.Doctor', on_delete=models.SET_NULL, null=True,blank=True, related_name='headed_departments')
 
     def __str__(self):
         return self.name
@@ -19,7 +20,6 @@ class Appointment(models.Model):
     status = models.CharField(max_length=20, default='PENDING')
 
     def is_past_due(self):
-        from django.utils import timezone
         return self.appointment_date < timezone.now() and self.status in ['PENDING', 'APPROVED']
 
     def update_overdue_status(self):

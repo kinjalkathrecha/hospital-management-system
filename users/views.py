@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.mixins import LoginRequiredMixin , UserPassesTestMixin
-from django.views.generic import TemplateView, View
+from django.views.generic import TemplateView, View, CreateView
 from django.urls import reverse_lazy
 from rest_framework import viewsets, permissions
 from .models import User, Doctor, Patient
@@ -10,15 +10,15 @@ from .serializers import UserSerializer
 from django.utils import timezone
 from clinical.models import Appointment, LabReport
 from facility.models import Room, Bed, Bill
-from django.db.models import Sum,Count
-# Create your views here.
+from django.db.models import Sum
+from .forms import PatientRegistrationForm, DoctorRegistrationForm, StaffRegistrationForm
 
 class HomeView(TemplateView):
     template_name = 'home.html'
 
 def get_dashboard_url(user):
     if user.is_superuser or user.role == 'ADMIN':
-        return '/admin/'
+        return reverse_lazy('admin_dashboard')
     elif user.role == 'DOCTOR':
         return reverse_lazy('doctor_dashboard')
     elif user.role == 'PATIENT':
@@ -33,92 +33,38 @@ class UserLoginView(LoginView):
     def get_success_url(self):
         return get_dashboard_url(self.request.user)
 
-#registration
-class PatientRegistrationView(View):
+class PatientRegistrationView(CreateView):
+    model = User
+    form_class = PatientRegistrationForm
     template_name = 'register_patient.html'
+    success_url = reverse_lazy('patient_dashboard')
 
-    def get(self, request):
-        return render(request, self.template_name)
+    def form_valid(self, form):
+        user = form.save()
+        login(self.request, user)
+        return redirect(self.success_url)
 
-    def post(self, request):
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        
-        user = User.objects.create_user(
-            username=username, 
-            email=email, 
-            password=password,
-            first_name=first_name,
-            last_name=last_name,
-            role='PATIENT'
-        )
-        Patient.objects.create(
-            user=user, 
-            address=request.POST.get('address'), 
-            city=request.POST.get('city'),
-            blood_group=request.POST.get('blood_group', '')
-        )
-        login(request, user)
-        return redirect('patient_dashboard')
-
-class DoctorRegistrationView(View):
+class DoctorRegistrationView(CreateView):
+    model = User
+    form_class = DoctorRegistrationForm
     template_name = 'register_doctor.html'
+    success_url = reverse_lazy('doctor_dashboard')
 
-    def get(self, request):
-        return render(request, self.template_name)
+    def form_valid(self, form):
+        user = form.save()
+        login(self.request, user)
+        return redirect(self.success_url)
 
-    def post(self, request):
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        
-        user = User.objects.create_user(
-            username=username, 
-            email=email, 
-            password=password,
-            first_name=first_name,
-            last_name=last_name,
-            role='DOCTOR'
-        )
-        doctor_charges = request.POST.get('charges')
-        Doctor.objects.create(
-            user=user, 
-            specialization=request.POST.get('specialization'),
-            experience=request.POST.get('experience'),
-            qualification=request.POST.get('qualification'),
-            charges=doctor_charges
-        )
-        login(request, user)
-        return redirect('doctor_dashboard')
-
-class StaffRegistrationView(View):
+class StaffRegistrationView(CreateView):
+    model = User
+    form_class = StaffRegistrationForm
     template_name = 'register_staff.html'
+    success_url = reverse_lazy('staff_dashboard')
 
-    def get(self, request):
-        return render(request, self.template_name)
-
-    def post(self, request):
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        
-        user = User.objects.create_user(
-            username=username, 
-            email=email, 
-            password=password,
-            first_name=first_name,
-            last_name=last_name,
-            role='STAFF'
-        )
-        login(request, user)
-        return redirect('staff_dashboard')
+    def form_valid(self, form):
+        user = form.save()
+        login(self.request, user)
+        return redirect(self.success_url)
 
 #dashboards
 class PatientDashboardView(LoginRequiredMixin, TemplateView):
@@ -135,7 +81,7 @@ class PatientDashboardView(LoginRequiredMixin, TemplateView):
         ).order_by('appointment_date')[:5]
         
         bills = Bill.objects.filter(patient=patient)
-        context['total_due'] = sum(bill.total_amount for bill in bills if bill.status == 'UNPAID')
+        context['total_due'] = bills.filter(status='UNPAID').aggregate(total=Sum('total_amount'))['total'] or 0
         return context
 
 class DoctorDashboardView(LoginRequiredMixin, TemplateView):
@@ -183,20 +129,14 @@ class AdminDashboardView(LoginRequiredMixin, UserPassesTestMixin, View):
         
         pending_appointments = Appointment.objects.filter(status='PENDING').count()
         
-        # Monthly Revenue Calculation
+        # Monthly Revenue Calculation based on Paid Bills
         now = timezone.now()
         start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
-        appointment_revenue = Appointment.objects.filter(
-            status='COMPLETED',
-            appointment_date__gte=start_of_month
-        ).aggregate(total=Sum('doctor__charges'))['total'] or 0
-        
-        lab_revenue = LabReport.objects.filter(
-            report_date__gte=start_of_month
-        ).aggregate(total=Sum('lab_charge'))['total'] or 0
-        
-        total_revenue = appointment_revenue + lab_revenue
+        total_revenue = Bill.objects.filter(
+            status='PAID',
+            created_at__gte=start_of_month
+        ).aggregate(total=Sum('total_amount'))['total'] or 0
         
         total_lab_reports = LabReport.objects.count()
         recent_users = User.objects.all().order_by('-date_joined')[:5]

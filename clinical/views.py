@@ -3,8 +3,8 @@ from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import CreateView, View, ListView
-from .forms import AppointmentForm, LabReportCreateForm
-from .models import Appointment, LabReport
+from .forms import AppointmentForm, LabReportCreateForm,AddDepartmentForm
+from .models import Appointment, LabReport,Department
 
 class PatientRequiredMixin(UserPassesTestMixin):
     def test_func(self):
@@ -17,6 +17,10 @@ class DoctorRequiredMixin(UserPassesTestMixin):
 class StaffOrDoctorRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_authenticated and self.request.user.role in ['STAFF', 'DOCTOR', 'ADMIN']
+
+class AdminRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.role == 'ADMIN'
 
 class BookAppointmentView(LoginRequiredMixin, PatientRequiredMixin, CreateView):
     model = Appointment
@@ -70,3 +74,15 @@ class LabReportCreateView(LoginRequiredMixin, StaffOrDoctorRequiredMixin, Create
         elif self.request.user.role == 'STAFF':
             return reverse_lazy('staff_dashboard')
         return reverse_lazy('home')
+
+class AddDepartmentView(LoginRequiredMixin,AdminRequiredMixin,CreateView):
+    model = Department
+    form_class = AddDepartmentForm
+    template_name = 'clinical/add_dept.html'
+    success_url = reverse_lazy('admin_dashboard')
+
+    def form_valid(self, form):
+        dept = form.save()
+        dept.save()
+        messages.success(self.request, 'Department added successfully!')
+        return super().form_valid(form)
