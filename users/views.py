@@ -6,6 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin , UserPassesTestMixin
 from django.views.generic import TemplateView, View, CreateView
 from django.urls import reverse_lazy
 from rest_framework import viewsets, permissions
+from rest_framework.permissions import IsAdminUser
 from .models import User, Doctor, Patient
 from .serializers import UserSerializer
 from django.utils import timezone
@@ -28,42 +29,45 @@ def get_dashboard_url(user):
         return reverse_lazy('staff_dashboard')
     return reverse_lazy('home')
 
-class UserLoginView(LoginView):
-    template_name = 'registration/login.html'
-    
-    def form_valid(self, form):
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return get_dashboard_url(self.request.user)
+class DashboardRedirectView(LoginRequiredMixin, View):
+    """Fixes the /accounts/profile/ 404 by redirecting to the correct role dashboard."""
+    def get(self, request):
+        return redirect(get_dashboard_url(request.user))
 
 class PatientRegistrationView(CreateView):
+    """Public registration for Patients (Auto-login)"""
     model = User
     form_class = PatientRegistrationForm
     template_name = 'register_patient.html'
-    success_url = reverse_lazy('patient_dashboard')
-
+    
     def form_valid(self, form):
         user = form.save()
         login(self.request, user)
-        return redirect(self.success_url)
+        messages.success(self.request, "Account created successfully! Welcome to your dashboard.")
+        return redirect('patient_dashboard')
 
-class DoctorRegistrationView(CreateView):
+class DoctorRegistrationView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = User
     form_class = DoctorRegistrationForm
     template_name = 'register_doctor.html'
     success_url = reverse_lazy('doctor_dashboard')
 
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.role == 'ADMIN'
+
     def form_valid(self, form):
         user = form.save()
         login(self.request, user)
         return redirect(self.success_url)
 
-class StaffRegistrationView(CreateView):
+class StaffRegistrationView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = User
     form_class = StaffRegistrationForm
     template_name = 'register_staff.html'
     success_url = reverse_lazy('staff_dashboard')
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.role == 'ADMIN'
 
     def form_valid(self, form):
         user = form.save()
@@ -71,6 +75,7 @@ class StaffRegistrationView(CreateView):
         return redirect(self.success_url)
 
 class AdminAddDoctorView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """Admin-only: Register a Doctor (No auto-login)"""
     model = User
     form_class = DoctorRegistrationForm
     template_name = 'register_doctor.html'
@@ -84,9 +89,27 @@ class AdminAddDoctorView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         messages.success(self.request, 'Doctor registered successfully!')
         return redirect(self.success_url)
 
+class AdminAddStaffView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """Admin-only: Register a Staff member (No auto-login)"""
+    model = User
+    form_class = StaffRegistrationForm
+    template_name = 'register_staff.html'
+    success_url = reverse_lazy('admin_dashboard')
+
+    def test_func(self):
+        return self.request.user.is_superuser or self.request.user.role == 'ADMIN'
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, 'Staff member registered successfully!')
+        return redirect(self.success_url)
+
 #dashboards
-class PatientDashboardView(LoginRequiredMixin, TemplateView):
+class PatientDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'dashboards/patient_dashboard.html'
+
+    def test_func(self):
+        return self.request.user.role == 'PATIENT'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -102,8 +125,11 @@ class PatientDashboardView(LoginRequiredMixin, TemplateView):
         context['total_due'] = bills.filter(status='UNPAID').aggregate(total=Sum('total_amount'))['total'] or 0
         return context
 
-class DoctorDashboardView(LoginRequiredMixin, TemplateView):
+class DoctorDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'dashboards/doctor_dashboard.html'
+
+    def test_func(self):
+        return self.request.user.role == 'DOCTOR'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -122,8 +148,11 @@ class DoctorDashboardView(LoginRequiredMixin, TemplateView):
         context['appointments'] = today_appointments[:10]
         return context
 
-class StaffDashboardView(LoginRequiredMixin, TemplateView):
+class StaffDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'dashboards/staff_dashboard.html'
+
+    def test_func(self):
+        return self.request.user.role == 'STAFF'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -142,35 +171,24 @@ class AdminDashboardView(LoginRequiredMixin, UserPassesTestMixin, View):
         return self.request.user.is_superuser or self.request.user.role == 'ADMIN'
 
     def get(self, request):
-        total_patients = User.objects.filter(role='PATIENT').count()
-        total_doctors = User.objects.filter(role='DOCTOR').count()
-        
-        pending_appointments = Appointment.objects.filter(status='PENDING').count()
-        
-        # Monthly Revenue Calculation based on Paid Bills
-        now = timezone.now()
-        start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        
-        total_revenue = Bill.objects.filter(
-            status='PAID',
-            created_at__gte=start_of_month
-        ).aggregate(total=Sum('total_amount'))['total'] or 0
-        
-        total_lab_reports = LabReport.objects.count()
-        recent_users = User.objects.all().order_by('-date_joined')[:5]
-
         context = {
-            'total_patients': total_patients,
-            'total_doctors': total_doctors,
-            'pending_appointments': pending_appointments,
-            'total_revenue': total_revenue,
-            'total_lab_reports': total_lab_reports,
-            'recent_users': recent_users,
+            'total_patients': User.objects.filter(role='PATIENT').count(),
+            'total_doctors': User.objects.filter(role='DOCTOR').count(),
+            'pending_appointments': Appointment.objects.filter(status='PENDING').count(),
+            'total_lab_reports': LabReport.objects.count(),
+            'recent_users': User.objects.all().order_by('-date_joined')[:5],
         }
+        
+        # Revenue calculation
+        now = timezone.now()
+        start_of_month = now.replace(day=1, hour=0, minute=0, second=0)
+        context['total_revenue'] = Bill.objects.filter(
+            status='PAID', created_at__gte=start_of_month
+        ).aggregate(total=Sum('total_amount'))['total'] or 0
         
         return render(request, self.template_name, context)
     
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminUser]

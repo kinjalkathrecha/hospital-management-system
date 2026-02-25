@@ -113,10 +113,12 @@ STATIC_URL = 'static/'
 AUTH_USER_MODEL = 'users.User'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'profile_redirect'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
