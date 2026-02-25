@@ -14,7 +14,6 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=20)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-    gender = models.CharField(max_length=10, choices=[('M', 'Male'), ('F', 'Female'), ('O', 'Other')])
     phone = models.CharField(max_length=15, blank=True)
     emergency_number = models.CharField(max_length=15, blank=True)
     birth_date = models.DateField(null=True, blank=True)
@@ -55,6 +54,7 @@ class Patient(models.Model):
         related_name='patient_profile'
     )
     age=models.IntegerField(null=True)
+    gender = models.CharField(max_length=10, choices=[('M', 'Male'), ('F', 'Female'), ('O', 'Other')])
     blood_group = models.CharField(max_length=5)
     address = models.TextField()
     city = models.CharField(max_length=100)

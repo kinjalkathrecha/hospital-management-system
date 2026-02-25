@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'active_admission_list' %}">Admissions</a></li>
+                <li class="breadcrumb-item active">Stay Details</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold">Stay for {{ admission.patient.user.get_full_name }}</h2>
+    </div>
+    <div class="col-md-4 text-md-end pt-4">
+        {% if not admission.discharge_date %}
+        <form action="{% url 'discharge_patient' admission.pk %}" method="post" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger shadow-sm {% if not is_cleared %}disabled{% endif %}" {% if not is_cleared %}title="Clear all unpaid bills first" {% endif %}>
+                <i class="fas fa-sign-out-alt me-1"></i> Request Discharge
+            </button>
+        </form>
+        {% else %}
+        <span class="badge bg-secondary p-2 fs-6">
+            Discharged on {{ admission.discharge_date|date:"M d, Y" }}
+        </span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column: Patient & Stay Info -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="fas fa-info-circle me-2 text-primary"></i>Patient Info</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="text-muted small d-block">Full Name</label>
+                    <span class="fw-bold">{{ admission.patient.user.get_full_name }}</span>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted small d-block">Age / Gender</label>
+                    <span class="fw-bold">{{ admission.patient.age }} Years / {{ admission.patient.gender }}</span>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted small d-block">Blood Group</label>
+                    <span class="badge bg-danger">{{ admission.patient.blood_group }}</span>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted small d-block">Treating Doctor</label>
+                    {% if admission.doctor %}
+                    <span class="fw-bold text-dark">Dr. {{ admission.doctor.user.get_full_name }}</span>
+                    {% else %}
+                    <span class="text-muted italic">Not Assigned</span>
+                    {% endif %}
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <label class="text-muted small d-block">Room & Bed</label>
+                    {% if admission.room %}
+                    <span class="fw-bold">Room {{ admission.room.room_number }} ({{ admission.room.get_type_display }})</span><br>
+                    {% endif %}
+                    {% if admission.bed %}
+                    <span class="fw-bold text-muted">Bed {{ admission.bed.bed_number }}</span>
+                    {% endif %}
+                    {% if not admission.room and not admission.bed %}
+                    <span class="text-muted italic">OPD / No Bed Assigned</span>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="text-muted small d-block">Admitted On</label>
+                    <span class="fw-bold">{{ admission.admit_date|date:"M d, Y H:i" }}</span>
+                </div>
+                <div class="mb-0">
+                    <label class="text-muted small d-block">Length of Stay</label>
+                    <span class="fs-4 fw-bold text-primary">{{ admission.length_of_stay }} Days</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Billing Status -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="fas fa-file-invoice-dollar me-2 text-primary"></i>Billing Status</h5>
+            </div>
+            <div class="card-body">
+                {% if unpaid_bills %}
+                <div class="alert alert-warning p-2 small mb-3">
+                    <i class="fas fa-exclamation-triangle me-1"></i> {{ unpaid_bills.count }} Unpaid bill(s) pending.
+                </div>
+                <ul class="list-group list-group-flush mb-0">
+                    {% for bill in unpaid_bills %}
+                    <li
+                        class="list-group-item d-flex justify-content-between align-items-center bg-light rounded-3 mb-2 px-3 py-2 border-0">
+                        <div>
+                            <small class="text-muted d-block">Bill #{{ bill.id }}</small>
+                            <span class="fw-bold">₹{{ bill.total_amount }}</span>
+                        </div>
+                        <span class="badge bg-danger text-white">UNPAID</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                    <p class="mb-0 fw-bold text-success">All Bills Cleared</p>
+                    <small class="text-muted">Cleared for discharge</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Clinical Records Linked to this Stay -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="fas fa-notes-medical me-2 text-success"></i>Stay History</h5>
+                <span class="badge bg-light text-muted fw-normal">Records from Stay Period Only</span>
+            </div>
+            <div class="card-body">
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs nav-bordered mb-3" id="stayHistoryTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active fw-bold" id="medical-tab" data-bs-toggle="tab" href="#medical"
+                            role="tab">
+                            Medical Records ({{ medical_records.count }})
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold" id="lab-tab" data-bs-toggle="tab" href="#lab" role="tab">
+                            Lab Reports ({{ lab_reports.count }})
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="stayHistoryTabContent">
+                    <!-- Medical Records -->
+                    <div class="tab-pane fade show active" id="medical" role="tabpanel">
+                        {% for record in medical_records %}
+                        <div class="border-start border-primary border-4 ps-3 mb-4 py-1">
+                            <div class="d-flex justify-content-between">
+                                <h6 class="fw-bold mb-1">Diagnosis: {{ record.diagnosis|truncatewords:10 }}</h6>
+                                <small class="text-muted">{{ record.record_date|date:"M d, Y H:i" }}</small>
+                            </div>
+                            <p class="text-muted small mb-1"><strong>Doctor:</strong> {{
+                                record.doctor.user.get_full_name }}</p>
+                            <p class="mb-0 small">{{ record.treatment|truncatewords:20 }}</p>
+                        </div>
+                        {% empty %}
+                        <p class="text-center text-muted py-4">No medical records found for this stay period.</p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Lab Reports -->
+                    <div class="tab-pane fade" id="lab" role="tabpanel">
+                        {% for report in lab_reports %}
+                        <div class="border-start border-info border-4 ps-3 mb-4 py-1">
+                            <div class="d-flex justify-content-between">
+                                <h6 class="fw-bold mb-1">{{ report.report_type }}</h6>
+                                <small class="text-muted">{{ report.report_date|date:"M d, Y H:i" }}</small>
+                            </div>
+                            <p class="text-muted small mb-1"><strong>Doctor:</strong> {{
+                                report.doctor.user.get_full_name }}</p>
+                            <p class="mb-0 small"><strong>Result:</strong> {{ report.result|truncatewords:20 }}</p>
+                        </div>
+                        {% empty %}
+                        <p class="text-center text-muted py-4">No lab reports found for this stay period.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .nav-bordered {
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .nav-bordered .nav-link {
+        border: none;
+        margin-bottom: -2px;
+        color: #6c757d;
+    }
+
+    .nav-bordered .nav-link.active {
+        border-bottom: 2px solid var(--primary-color);
+        color: var(--primary-color);
+    }
+
+    .bg-light {
+        background-color: #f8f9fa !important;
+    }
+</style>
+{% endblock %}

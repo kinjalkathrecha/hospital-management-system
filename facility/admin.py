@@ -13,7 +13,22 @@ class BedAdmin(admin.ModelAdmin):
 
 @admin.register(Admission)
 class AdmissionAdmin(admin.ModelAdmin):
-    list_display = ('patient', 'room', 'bed', 'admit_date', 'discharge_date')
+    list_display = ('patient', 'doctor', 'room', 'bed', 'admit_date', 'status', 'length_of_stay_display')
+    list_filter = ('status', 'admit_date', 'room__dept')
+    search_fields = ('patient__user__first_name', 'patient__user__last_name', 'room__room_number')
+    readonly_fields = ('length_of_stay_display', 'admit_date')
+    
+    def length_of_stay_display(self, obj):
+        return f"{obj.length_of_stay} Days"
+    length_of_stay_display.short_description = 'Current Stay'
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "bed":
+            # Only show available beds in the dropdown when creating a new admission
+            # But allow the current bed to be shown when editing
+            kwargs["queryset"] = Bed.objects.filter(status=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 @admin.register(Bill)
 class BillAdmin(admin.ModelAdmin):

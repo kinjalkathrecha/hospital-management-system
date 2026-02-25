@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2 class="fw-bold"><i class="fas fa-bed me-2 text-primary"></i>Active Admissions</h2>
+        <p class="text-muted">Real-time occupancy and discharge tracking.</p>
+    </div>
+    <div class="col-md-6 text-md-end pt-2">
+        <a href="{% url 'admission_create' %}" class="btn btn-primary shadow-sm me-3">
+            <i class="fas fa-plus-circle me-1"></i> Admit Patient
+        </a>
+        <span class="badge bg-danger p-2 fs-6 shadow-sm me-2">
+            <i class="fas fa-user-check me-1"></i> Occupied: {{ total_occupied_beds }}
+        </span>
+
+        <span class="badge bg-success p-2 fs-6 shadow-sm">
+            <i class="fas fa-sign-out-alt me-1"></i> Discharged Today: {{ discharges_today }}
+        </span>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-secondary">
+                    <tr>
+                        <th class="ps-4">Patient</th>
+                        <th>Treating Doctor</th>
+                        <th>Room / Bed</th>
+                        <th>Admitted On</th>
+                        <th>Length of Stay</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for admission in admissions %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-primary-soft text-primary rounded-circle me-3 p-2">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div>
+                                    <span class="fw-bold d-block">{{ admission.patient.user.get_full_name }}</span>
+                                    <small class="text-muted">#{{ admission.patient.id }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if admission.doctor %}
+                            <span class="fw-bold text-dark">Dr. {{ admission.doctor.user.last_name }}</span>
+                            {% else %}
+                            <span class="text-muted italic">Not Assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if admission.room %}
+                            <span class="badge bg-info text-dark">Room {{ admission.room.room_number }}</span>
+                            {% endif %}
+                            {% if admission.bed %}
+                            <span class="badge bg-light text-dark">Bed {{ admission.bed.bed_number }}</span>
+                            {% endif %}
+                            {% if not admission.room and not admission.bed %}
+                            <span class="text-muted small">OPD/Pending</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ admission.admit_date|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <span class="fw-bold text-primary">{{ admission.length_of_stay }} Days</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-success-soft text-success border border-success">
+                                {{ admission.status }}
+                            </span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'admission_detail' admission.pk %}"
+                                class="btn btn-sm btn-outline-primary me-2">
+                                <i class="fas fa-eye me-1"></i> View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <i class="fas fa-hospital-alt fa-3x text-muted mb-3 d-block"></i>
+                            <p class="text-muted">No active admissions at the moment.</p>
+                            <a href="{% url 'room_list' %}" class="btn btn-primary btn-sm">Manage Rooms & Beds</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-primary-soft {
+        background-color: rgba(78, 115, 223, 0.1);
+    }
+
+    .bg-success-soft {
+        background-color: rgba(28, 200, 138, 0.1);
+    }
+
+    .avatar-sm {
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+{% endblock %}

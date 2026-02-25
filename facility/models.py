@@ -25,18 +25,62 @@ class Bed(models.Model):
 # Admission model
 class Admission(models.Model):
     patient = models.ForeignKey('users.Patient', on_delete=models.CASCADE, related_name='admissions')
-    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True)
-    bed = models.ForeignKey(Bed, on_delete=models.SET_NULL, null=True)
+    doctor = models.ForeignKey('users.Doctor', on_delete=models.SET_NULL, null=True, blank=True, related_name='admissions')
+    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)
+    bed = models.ForeignKey(Bed, on_delete=models.SET_NULL, null=True, blank=True)
+
     admit_date = models.DateTimeField(auto_now_add=True)
     discharge_date = models.DateTimeField(null=True, blank=True)
-
+    STATUS_CHOICES = [
+    ('ADMITTED', 'Admitted'),
+    ('DISCHARGED', 'Discharged'),
+    ('TRANSFERRED', 'Transferred'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ADMITTED')
     def __str__(self):
         return f"Admission: {self.patient} (Admitted: {self.admit_date})"
+
+    @property
+    def length_of_stay(self):
+        from django.utils import timezone
+        if self.discharge_date:
+            delta = self.discharge_date - self.admit_date
+        else:
+            delta = timezone.now() - self.admit_date
+        return max(delta.days, 1)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if not self.pk and self.bed and not self.bed.status:
+             raise ValidationError(f"Bed {self.bed.bed_number} is already occupied.")
+        
+        if self.discharge_date and self.discharge_date < self.admit_date:
+            raise ValidationError("Discharge date cannot be earlier than admit date.")
+
+        if self.status == 'DISCHARGED' or self.discharge_date:
+            # Check for unpaid bills linked to THIS admission
+            unpaid_bills = self.admission_bills.filter(status='UNPAID').exists()
+            if unpaid_bills:
+                raise ValidationError("Cannot discharge patient until all bills for this admission are PAID.")
+
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        is_new = self.pk is None
+        if is_new and self.bed:
+            self.bed.status = False
+            self.bed.save()
+        if self.status == 'DISCHARGED' and self.bed:
+            self.bed.status = True
+            self.bed.save()
+        super().save(*args, **kwargs)
+
+    
 
 # Bill model
 class Bill(models.Model):
     patient = models.ForeignKey('users.Patient', on_delete=models.CASCADE, related_name='bills')
-    admission = models.ForeignKey(Admission, on_delete=models.SET_NULL, null=True, blank=True)
+    admission = models.ForeignKey(Admission, on_delete=models.SET_NULL, null=True, blank=True, related_name='admission_bills')
     appointment = models.ForeignKey('clinical.Appointment', on_delete=models.SET_NULL, null=True, blank=True)
     room_charge = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     staff_charge = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
@@ -103,3 +147,5 @@ class StaffAssignment(models.Model):
 
     def __str__(self):
         return f"Staff {self.staff.user.get_full_name()} assigned to Patient {self.patient}"
+
+

@@ -18,6 +18,9 @@ from .forms import PatientRegistrationForm, DoctorRegistrationForm, StaffRegistr
 class HomeView(TemplateView):
     template_name = 'home.html'
 
+def error_403(request, exception):
+    return render(request, '403.html', status=403)
+
 def get_dashboard_url(user):
     if user.is_superuser or user.role == 'ADMIN':
         return reverse_lazy('admin_dashboard')
@@ -30,12 +33,10 @@ def get_dashboard_url(user):
     return reverse_lazy('home')
 
 class DashboardRedirectView(LoginRequiredMixin, View):
-    """Fixes the /accounts/profile/ 404 by redirecting to the correct role dashboard."""
     def get(self, request):
         return redirect(get_dashboard_url(request.user))
 
 class PatientRegistrationView(CreateView):
-    """Public registration for Patients (Auto-login)"""
     model = User
     form_class = PatientRegistrationForm
     template_name = 'register_patient.html'

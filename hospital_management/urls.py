@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from users.views import UserViewSet, DashboardRedirectView 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
-
+handler403 = 'users.views.error_403'
 urlpatterns = [
     path('admin/', admin.site.urls),
 
