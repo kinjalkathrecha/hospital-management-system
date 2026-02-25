@@ -1,5 +1,5 @@
 from django import forms
-from .models import Appointment, Department, LabReport,Department
+from .models import Appointment, Department, LabReport, MedicalRecord
 
 class AppointmentForm(forms.ModelForm):
     department = forms.ModelChoiceField(queryset=Department.objects.all(), required=False)
@@ -47,3 +47,18 @@ class AddDepartmentForm(forms.ModelForm):
             'floor': forms.Select(attrs={'class': 'form-control'}, choices=FLOOR_CHOICES),
             'hod': forms.Select(attrs={'class': 'form-control'})
         }
+
+class MedicalRecordForm(forms.ModelForm):
+    class Meta:
+        model = MedicalRecord
+        fields = ['patient', 'diagnosis', 'treatment']
+        widgets = {
+            'patient': forms.Select(attrs={'class': 'form-control'}),
+            'diagnosis': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'treatment': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.initial.get('patient'):
+            self.fields['patient'].disabled = True

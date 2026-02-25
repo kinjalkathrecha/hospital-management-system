@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-0">
+                <div class="card-body p-5 text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-exclamation-triangle fa-4x text-warning"></i>
+                    </div>
+                    <h3 class="mb-3">Confirm Deletion</h3>
+                    <p class="text-muted mb-4">
+                        Are you sure you want to delete the medical record for <strong>{{object.patient.user.get_full_name }}</strong> dated <strong>{{ object.record_date|date:"M d,Y" }}</strong>? This action cannot be undone.
+                    </p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">Delete Permanently</button>
+                            <a href="{% url 'medical_record_detail' object.pk %}"
+                                class="btn btn-outline-secondary btn-lg">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -54,6 +54,7 @@ class Patient(models.Model):
         on_delete=models.CASCADE, 
         related_name='patient_profile'
     )
+    age=models.IntegerField(null=True)
     blood_group = models.CharField(max_length=5)
     address = models.TextField()
     city = models.CharField(max_length=100)

@@ -31,6 +31,9 @@ def get_dashboard_url(user):
 class UserLoginView(LoginView):
     template_name = 'registration/login.html'
     
+    def form_valid(self, form):
+        return super().form_valid(form)
+
     def get_success_url(self):
         return get_dashboard_url(self.request.user)
 

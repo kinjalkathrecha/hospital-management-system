@@ -3,13 +3,36 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import User, Patient, Doctor
 
 class PatientRegistrationForm(UserCreationForm):
+    GENDER_CHOICES= [
+        ('','Select gender'),
+        ('MALE','male'),
+        ('FEMALE','female'),
+        ('OTHER','other')
+    ]
+
     first_name = forms.CharField(max_length=150, required=True)
     last_name = forms.CharField(max_length=150, required=True)
     email = forms.EmailField(required=True)
+    age = forms.IntegerField(required=True)
+    gender = forms.ChoiceField(choices=GENDER_CHOICES,required=True,label="gender")
     address = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}))
     city = forms.CharField(max_length=100)
-    blood_group = forms.CharField(max_length=5, required=False)
-
+    BLOOD_GROUP_CHOICES = [
+            ('', 'Select Blood Group'), # Optional empty label
+            ('A+', 'A+'),
+            ('A-', 'A-'),
+            ('B+', 'B+'),
+            ('B-', 'B-'),
+            ('AB+', 'AB+'),
+            ('AB-', 'AB-'),
+            ('O+', 'O+'),
+            ('O-', 'O-'),
+        ]
+    blood_group = forms.ChoiceField(
+        choices=BLOOD_GROUP_CHOICES, 
+        required=False,
+        label="Blood Group"
+    )
     class Meta(UserCreationForm.Meta):
         model = User
         fields = UserCreationForm.Meta.fields + ('first_name', 'last_name', 'email')
