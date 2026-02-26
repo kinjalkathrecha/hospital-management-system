@@ -7,7 +7,7 @@ from .models import Room, Bed
 
 from django.utils import timezone
 from .models import Room, Bed, Admission
-from .forms import AdmissionForm
+from .forms import AdmissionForm,RoomForm,BedForm
 from clinical.models import MedicalRecord, LabReport
 
 class StaffRequiredMixin(UserPassesTestMixin):
@@ -21,10 +21,16 @@ class AdmissionCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
     success_url = reverse_lazy('active_admission_list')
 
     def form_valid(self, form):
-        messages.success(self.request, 'Patient admitted successfully!')
-        return super().form_valid(form)
-
-
+        response = super().form_valid(form)
+        
+        bed = self.object.bed
+        bed.status = 'OCCUPIED'
+        bed.save()
+        
+        messages.success(self.request, f'Patient {self.object.patient} admitted to Bed {bed.bed_number}!')
+        return response
+    
+    
 class ActiveAdmissionListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     model = Admission
     template_name = 'hospital_facility/active_admission_list.html'
@@ -35,7 +41,7 @@ class ActiveAdmissionListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['total_occupied_beds'] = Bed.objects.filter(status=False).count()
+        context['total_occupied_beds'] = Bed.objects.filter(status='OCCUPIED').count()
         context['discharges_today'] = Admission.objects.filter(
             discharge_date__date=timezone.now().date()
         ).count()
@@ -72,19 +78,29 @@ class AdmissionDetailView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
 
 class DischargePatientView(LoginRequiredMixin, StaffRequiredMixin, View):
     def post(self, request, pk):
+        # 1. Get the admission record
         admission = get_object_or_404(Admission, pk=pk)
+        
         try:
+            # 2. Mark the admission as discharged
             admission.status = 'DISCHARGED'
             admission.discharge_date = timezone.now()
-            admission.save() # This triggers clean() and bed status update in models.py
-            messages.success(request, f"Patient {admission.patient} has been successfully discharged.")
+            admission.save()
+
+            # 3. CRITICAL STEP: Update the Bed status
+            if admission.bed:
+                bed = admission.bed
+                bed.status = 'AVAILABLE'  # Set back to Available
+                bed.save()
+            
+            messages.success(request, f"Patient {admission.patient} discharged. Bed {bed.bed_number} is now available!")
+            
         except Exception as e:
             messages.error(request, f"Error during discharge: {str(e)}")
         
         return redirect('active_admission_list')
-
+    
 class RoomListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
-
     model = Room
     template_name = 'hospital_facility/room_list.html'
     context_object_name = 'rooms'
@@ -94,7 +110,7 @@ class RoomListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
 
 class RoomCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
     model = Room
-    fields = ['dept', 'room_number', 'type', 'room_charge']
+    form_class = RoomForm
     template_name = 'hospital_facility/room_form.html'
     success_url = reverse_lazy('room_list')
 
@@ -104,7 +120,7 @@ class RoomCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
 
 class RoomUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
     model = Room
-    fields = ['dept', 'room_number', 'type', 'room_charge']
+    form_class = RoomForm
     template_name = 'hospital_facility/room_form.html'
     success_url = reverse_lazy('room_list')
 
@@ -121,11 +137,40 @@ class RoomDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
         messages.success(self.request, 'Room deleted successfully!')
         return super().delete(request, *args, **kwargs)
 
-class ToggleBedStatusView(LoginRequiredMixin, StaffRequiredMixin, View):
-    def get(self, request, pk):
-        bed = get_object_or_404(Bed, pk=pk)
-        bed.status = not bed.status
-        bed.save()
-        status_str = "Available" if bed.status else "Occupied"
-        messages.success(request, f'Bed {bed.bed_number} is now {status_str}.')
-        return redirect('room_list')
+
+class BedListView(LoginRequiredMixin,StaffRequiredMixin,ListView):
+    model = Bed
+    template_name='hospital_facility/bed_list.html'
+    context_object_name='beds'
+
+    def get_queryset(self):
+        return Bed.objects.select_related('room').all().order_by('room__room_number', 'bed_number')
+
+class BedCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
+    model = Bed
+    form_class = BedForm
+    template_name = 'hospital_facility/bed_form.html'
+    success_url = reverse_lazy('bed_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Bed {form.cleaned_data['bed_number']} created successfully!")
+        return super().form_valid(form)
+    
+class BedUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
+    model = Bed
+    form_class = BedForm
+    template_name = 'hospital_facility/bed_form.html'
+    success_url = reverse_lazy('bed_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Bed details updated successfully!")
+        return super().form_valid(form)
+
+class BedDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+    model = Bed
+    template_name = 'hospital_facility/bed_confirm_delete.html'
+    success_url = reverse_lazy('bed_list')
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, "Bed removed successfully!")
+        return super().delete(request, *args, **kwargs)

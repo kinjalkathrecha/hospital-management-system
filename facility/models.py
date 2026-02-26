@@ -15,13 +15,20 @@ class Room(models.Model):
 
 # Bed model
 class Bed(models.Model):
+    STATUS_CHOICES = [
+        ('AVAILABLE', 'Available'),
+        ('OCCUPIED', 'Occupied'),
+    ]
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='beds')
     bed_number = models.CharField(max_length=10)
-    status = models.BooleanField(default=True) # True for available
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='AVAILABLE') 
+
+    class Meta:
+        unique_together = ('room', 'bed_number')
 
     def __str__(self):
         return f"Bed {self.bed_number} in Room {self.room.room_number}"
-
+    
 # Admission model
 class Admission(models.Model):
     patient = models.ForeignKey('users.Patient', on_delete=models.CASCADE, related_name='admissions')
@@ -66,13 +73,19 @@ class Admission(models.Model):
 
     def save(self, *args, **kwargs):
         self.full_clean()
+        
         is_new = self.pk is None
+        
         if is_new and self.bed:
-            self.bed.status = False
+            self.bed.status = False 
             self.bed.save()
-        if self.status == 'DISCHARGED' and self.bed:
-            self.bed.status = True
-            self.bed.save()
+            
+        if self.status == 'DISCHARGED':
+            if self.bed:
+                self.bed.status = True  
+                self.bed.save()
+                
+                
         super().save(*args, **kwargs)
 
     

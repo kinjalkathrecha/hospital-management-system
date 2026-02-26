@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-dark">Bed Management</h2>
+    <div>
+        <a href="{% url 'bed_create' %}" class="btn btn-primary me-2">
+            <i class="fas fa-plus me-1"></i> Add Bed
+        </a>
+        <a href="{% if user.role == 'ADMIN' %}{% url 'admin_dashboard' %}{% else %}{% url 'staff_dashboard' %}{% endif %}" 
+           class="btn btn-outline-secondary">
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    {% for bed in beds %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card shadow-sm h-100 border-start border-4 {% if bed.status %}border-success{% else %}border-danger{% endif %}">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="m-0 font-weight-bold {% if bed.status %}text-success{% else %}text-danger{% endif %}">
+                        <i class="fas fa-bed me-2"></i>Bed {{ bed.bed_number }}
+                    </h5>
+                    <small class="text-muted">Room: {{ bed.room.room_number }} ({{ bed.room.get_type_display }})</small>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-light border" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'bed_update' bed.pk %}"><i class="fas fa-edit me-2"></i>Edit</a></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'bed_delete' bed.pk %}"><i class="fas fa-trash me-2"></i>Delete</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold">Status:</span>
+                    {% if bed.status == 'AVAILABLE' %}
+                        <span class="badge bg-success">Available</span>
+                    {% elif bed.status == 'OCCUPIED' %}
+                        <span class="badge bg-danger">Occupied</span>
+                    {% endif %}
+                </div>
+                
+                <p class="small text-muted mb-4">
+                    <i class="fas fa-hospital me-1"></i> Department: {{ bed.room.dept.name }}(Floor:{{bed.room.dept.floor}})
+                </p>
+                
+            
+            </div>
+
+            <div class="card-footer bg-light small d-flex justify-content-between">
+
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <div class="text-muted">
+            <i class="fas fa-bed fa-3x mb-3"></i>
+            <p>No beds found in the inventory.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
