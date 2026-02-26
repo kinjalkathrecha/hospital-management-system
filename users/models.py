@@ -14,11 +14,9 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=20)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-    phone = models.CharField(max_length=15, blank=True)
-    emergency_number = models.CharField(max_length=15, blank=True)
-    birth_date = models.DateField(null=True, blank=True)
+    
     is_deleted = models.BooleanField(default=False)
-    created_at = models.DateField(null=True, blank=True)
+    created_at = models.DateField(auto_now_add=True,null=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_superuser = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
@@ -48,13 +46,22 @@ class Doctor(models.Model):
         return f"Dr. {self.user.last_name}"
 
 class Patient(models.Model):
+    GENDER_CHOICES = [
+        ('MALE', 'Male'),
+        ('FEMALE', 'Female'),
+        ('OTHER', 'Other')
+    ]
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
         related_name='patient_profile'
     )
     age=models.IntegerField(null=True)
-    gender = models.CharField(max_length=10, choices=[('M', 'Male'), ('F', 'Female'), ('O', 'Other')])
+    phone = models.CharField(max_length=15, blank=True)
+    emergency_number = models.CharField(max_length=15, blank=True)
+    birth_date = models.DateField(null=True, blank=True)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     blood_group = models.CharField(max_length=5)
     address = models.TextField()
     city = models.CharField(max_length=100)

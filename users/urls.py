@@ -1,6 +1,4 @@
 from django.urls import path
-from rest_framework.routers import DefaultRouter
-from django.contrib.auth.views import LogoutView,LoginView
 from .views import (
     HomeView,  
     PatientRegistrationView, DoctorRegistrationView, StaffRegistrationView, AdminAddDoctorView,
@@ -10,9 +8,7 @@ from .views import (
 )
 
 urlpatterns = [
-    path('', HomeView.as_view(), name='home'),
-    path('login/', LoginView.as_view(), name='login'),
-    path('logout/', LogoutView.as_view(), name='logout'),
+   
     path('accounts/profile/', DashboardRedirectView.as_view(), name='profile_redirect'),
     path('register/patient/', PatientRegistrationView.as_view(), name='register_patient'),
     path('register/doctor/', DoctorRegistrationView.as_view(), name='register_doctor'),

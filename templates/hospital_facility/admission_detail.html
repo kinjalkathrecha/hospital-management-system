@@ -145,8 +145,7 @@
                                 <h6 class="fw-bold mb-1">Diagnosis: {{ record.diagnosis|truncatewords:10 }}</h6>
                                 <small class="text-muted">{{ record.record_date|date:"M d, Y H:i" }}</small>
                             </div>
-                            <p class="text-muted small mb-1"><strong>Doctor:</strong> {{
-                                record.doctor.user.get_full_name }}</p>
+                            <p class="text-muted small mb-1"><strong>Doctor:</strong> {{ record.doctor.user.get_full_name }}</p>
                             <p class="mb-0 small">{{ record.treatment|truncatewords:20 }}</p>
                         </div>
                         {% empty %}
@@ -162,8 +161,7 @@
                                 <h6 class="fw-bold mb-1">{{ report.report_type }}</h6>
                                 <small class="text-muted">{{ report.report_date|date:"M d, Y H:i" }}</small>
                             </div>
-                            <p class="text-muted small mb-1"><strong>Doctor:</strong> {{
-                                report.doctor.user.get_full_name }}</p>
+                            <p class="text-muted small mb-1"><strong>Doctor:</strong> {{ report.doctor.user.get_full_name }}</p>
                             <p class="mb-0 small"><strong>Result:</strong> {{ report.result|truncatewords:20 }}</p>
                         </div>
                         {% empty %}

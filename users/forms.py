@@ -3,22 +3,37 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import User, Patient, Doctor
 
 class PatientRegistrationForm(UserCreationForm):
-    GENDER_CHOICES= [
-        ('','Select gender'),
-        ('MALE','male'),
-        ('FEMALE','female'),
-        ('OTHER','other')
+    GENDER_CHOICES = [
+        ('MALE', 'Male'),
+        ('FEMALE', 'Female'),
+        ('OTHER', 'Other')
     ]
-
     first_name = forms.CharField(max_length=150, required=True)
     last_name = forms.CharField(max_length=150, required=True)
     email = forms.EmailField(required=True)
+    phone = forms.CharField(
+        max_length=15, 
+        required=True,
+        widget=forms.TextInput(attrs={'type': 'number', 'class': 'form-control'})
+    )
+    emergency_number = forms.CharField(
+        max_length=15, 
+        required=True,
+        widget=forms.TextInput(attrs={'type': 'number', 'class': 'form-control'})
+    )
+    birth_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date', 
+            'class': 'form-control'
+        })
+    )
     age = forms.IntegerField(required=True)
     gender = forms.ChoiceField(choices=GENDER_CHOICES,required=True,label="gender")
     address = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}))
     city = forms.CharField(max_length=100)
     BLOOD_GROUP_CHOICES = [
-            ('', 'Select Blood Group'), # Optional empty label
+            ('', 'Select Blood Group'), 
             ('A+', 'A+'),
             ('A-', 'A-'),
             ('B+', 'B+'),
@@ -45,10 +60,16 @@ class PatientRegistrationForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.role = 'PATIENT'
+        
         if commit:
             user.save()
             Patient.objects.create(
                 user=user,
+                age=self.cleaned_data['age'],        
+                gender=self.cleaned_data['gender'], 
+                phone=self.cleaned_data['phone'],
+                emergency_number=self.cleaned_data['emergency_number'],
+                birth_date=self.cleaned_data.get('birth_date'),
                 address=self.cleaned_data['address'],
                 city=self.cleaned_data['city'],
                 blood_group=self.cleaned_data['blood_group']

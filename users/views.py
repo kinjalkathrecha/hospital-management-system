@@ -8,7 +8,8 @@ from django.urls import reverse_lazy
 from rest_framework import viewsets, permissions
 from rest_framework.permissions import IsAdminUser
 from .models import User, Doctor, Patient
-from .serializers import UserSerializer
+from .serializers import UserSerializer,DoctorSerializer,PatientSerializer
+from facility.serializers import StaffSerializer
 from django.utils import timezone
 from clinical.models import Appointment, LabReport
 from facility.models import Room, Bed, Bill
@@ -40,7 +41,7 @@ class PatientRegistrationView(CreateView):
     model = User
     form_class = PatientRegistrationForm
     template_name = 'register_patient.html'
-    
+    serializer_class = PatientSerializer
     def form_valid(self, form):
         user = form.save()
         login(self.request, user)
@@ -52,7 +53,7 @@ class DoctorRegistrationView(LoginRequiredMixin, UserPassesTestMixin, CreateView
     form_class = DoctorRegistrationForm
     template_name = 'register_doctor.html'
     success_url = reverse_lazy('doctor_dashboard')
-
+    serializer_class = DoctorSerializer
     def test_func(self):
         return self.request.user.is_superuser or self.request.user.role == 'ADMIN'
 
@@ -65,6 +66,7 @@ class StaffRegistrationView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
     model = User
     form_class = StaffRegistrationForm
     template_name = 'register_staff.html'
+    serializer_class = StaffSerializer
     success_url = reverse_lazy('staff_dashboard')
 
     def test_func(self):

@@ -28,7 +28,7 @@
                     <tr>
                         <th class="ps-4">Patient</th>
                         <th>Treating Doctor</th>
-                        <th>Room / Bed</th>
+                        <th>Room</th>
                         <th>Admitted On</th>
                         <th>Length of Stay</th>
                         <th>Status</th>
@@ -45,7 +45,6 @@
                                 </div>
                                 <div>
                                     <span class="fw-bold d-block">{{ admission.patient.user.get_full_name }}</span>
-                                    <small class="text-muted">#{{ admission.patient.id }}</small>
                                 </div>
                             </div>
                         </td>
