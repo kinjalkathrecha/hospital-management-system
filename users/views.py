@@ -8,6 +8,7 @@ from django.urls import reverse_lazy
 from rest_framework import viewsets, permissions
 from rest_framework.permissions import IsAdminUser
 from .models import User, Doctor, Patient
+from facility.models import Admission
 from .serializers import UserSerializer,DoctorSerializer,PatientSerializer
 from facility.serializers import StaffSerializer
 from django.utils import timezone
@@ -78,7 +79,6 @@ class StaffRegistrationView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
         return redirect(self.success_url)
 
 class AdminAddDoctorView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    """Admin-only: Register a Doctor (No auto-login)"""
     model = User
     form_class = DoctorRegistrationForm
     template_name = 'register_doctor.html'
@@ -93,7 +93,6 @@ class AdminAddDoctorView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return redirect(self.success_url)
 
 class AdminAddStaffView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    """Admin-only: Register a Staff member (No auto-login)"""
     model = User
     form_class = StaffRegistrationForm
     template_name = 'register_staff.html'
@@ -137,7 +136,8 @@ class DoctorDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         doctor = self.request.user.doctor_profile
-        today = timezone.now().date()
+        now = timezone.localtime(timezone.now())
+        today = now.date()
         
         today_appointments = Appointment.objects.filter(
             doctor=doctor, 
@@ -146,9 +146,10 @@ class DoctorDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         context['today_count'] = today_appointments.count()
         context['pending_count'] = Appointment.objects.filter(
             doctor=doctor, 
-            status='PENDING'
+            status='PENDING',
+            appointment_date__gte=now  
         ).count()
-        context['appointments'] = today_appointments[:10]
+        context['appointments'] = today_appointments.order_by('appointment_date')[:10]
         return context
 
 class StaffDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -160,11 +161,17 @@ class StaffDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         total_beds = Bed.objects.count()
-        occupied_beds = Bed.objects.filter(status=False).count()
+        occupied_beds = Bed.objects.filter(status='OCCUPIED').count()
         occupancy_rate = (occupied_beds / total_beds * 100) if total_beds > 0 else 0
-        
+        today = timezone.localtime(timezone.now()).date()
+
         context['occupancy_rate'] = round(occupancy_rate, 1)
         context['pending_bills_count'] = Bill.objects.filter(status='UNPAID').count()
+        context['today_patient_record'] = LabReport.objects.filter(
+            report_date__date=today
+        ).count()
+        active_admissions = Admission.objects.filter(status='ADMITTED')
+        context['admissions'] = active_admissions
         return context
 
 class AdminDashboardView(LoginRequiredMixin, UserPassesTestMixin, View):

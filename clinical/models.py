@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.utils import timezone
-
 # Department model
 class Department(models.Model):
     name = models.CharField(max_length=100)
@@ -31,6 +31,11 @@ class Appointment(models.Model):
             self.save()
             return True
         return False
+
+    def clean(self):
+    # Only validate on new appointments 
+        if not self.pk and self.appointment_date < timezone.now():
+            raise ValidationError({'appointment_date': "You cannot book an appointment in the past!"})
 
     def __str__(self):
         return f"Appointment: {self.patient} with {self.doctor} on {self.appointment_date}"

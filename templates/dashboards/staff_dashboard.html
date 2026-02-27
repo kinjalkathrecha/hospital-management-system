@@ -44,7 +44,7 @@
                 <div class="card bg-primary text-white h-100">
                     <div class="card-body">
                         <h5 class="card-title">Patient Records</h5>
-                        <p class="card-text display-6">0</p>
+                        <p class="card-text display-6">{{ today_patient_record }}</p>
                         <a href="{% url 'lab_report_create' %}" class="text-white small">Enter Lab Result <i
                                 class="fas fa-arrow-right ms-1"></i></a>
                     </div>
@@ -56,11 +56,42 @@
             <div class="card-header bg-white py-3">
                 <h6 class="m-0 font-weight-bold text-warning">Active Admissions</h6>
             </div>
-            <div class="card-body">
-                <div class="text-center py-5">
-                    <i class="fas fa-bed fa-3x text-light mb-3"></i>
-                    <p class="text-muted">No active patient admissions currently.</p>
-                </div>
+            
+                
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Treating Doctor</th>
+                                <th>Room/Bed</th>
+                                <th>Admitted On</th>
+                                <th>Length of Stay</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for admission in admissions %}
+                            <tr>
+                                <td>{{ admission.patient }}</td>
+                                <td>{{ admission.doctor }}</td>
+                                <td>{{ admission.room }}</td>
+                                <td>{{ admission.admit_date|date:"d M Y" }}</td>
+                                <td>{{ admission.length_of_stay }}</td>
+                                <td><span class="badge bg-success">{{ admission.status }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">
+                                    <img src="path/to/icon.png" alt="icon">
+                                    <p>No active admissions at the moment.</p>
+                                    <a href="{% url 'manage_rooms' %}" class="btn btn-primary">Manage Rooms & Beds</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                
             </div>
         </div>
     </div>

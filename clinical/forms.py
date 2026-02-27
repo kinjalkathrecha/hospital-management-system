@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 from .models import Appointment, Department, LabReport, MedicalRecord
 
 class AppointmentForm(forms.ModelForm):
@@ -8,9 +9,13 @@ class AppointmentForm(forms.ModelForm):
         model = Appointment
         fields = ['doctor', 'appointment_date', 'status']
         widgets = {
-            'appointment_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-            'doctor': forms.Select(attrs={'class': 'form-control'}),
-            'status': forms.HiddenInput(),
+                'appointment_date': forms.DateTimeInput(attrs={
+                    'type': 'datetime-local', 
+                    'class': 'form-control',
+                    'min': timezone.localtime(timezone.now()).strftime('%Y-%m-%dT%H:%M')
+                }),            
+                'doctor': forms.Select(attrs={'class': 'form-control'}),
+                'status': forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):

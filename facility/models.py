@@ -50,11 +50,14 @@ class Admission(models.Model):
     @property
     def length_of_stay(self):
         from django.utils import timezone
-        if self.discharge_date:
-            delta = self.discharge_date - self.admit_date
-        else:
-            delta = timezone.now() - self.admit_date
-        return max(delta.days, 1)
+        
+        # Convert everything to a date object (strips time)
+        admit_date = self.admit_date.date()
+        end_date = self.discharge_date.date() if self.discharge_date else timezone.now().date()
+        
+        delta = end_date - admit_date
+        # Adding 1 ensures that admitting and discharging on the same day counts as 1 day
+        return delta.days + 1
 
     def clean(self):
         from django.core.exceptions import ValidationError
