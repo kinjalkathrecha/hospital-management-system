@@ -112,6 +112,13 @@ class StaffRegistrationForm(UserCreationForm):
     first_name = forms.CharField(max_length=150, required=True)
     last_name = forms.CharField(max_length=150, required=True)
     email = forms.EmailField(required=True)
+    salary = forms.DecimalField(max_digits=10, decimal_places=2, initial=0.00)
+    dept = forms.ModelChoiceField(
+        queryset=None, 
+        required=False, 
+        label="Department",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
 
     class Meta(UserCreationForm.Meta):
         model = User
@@ -119,12 +126,21 @@ class StaffRegistrationForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        from clinical.models import Department
+        self.fields['dept'].queryset = Department.objects.all()
         for field in self.fields.values():
-            field.widget.attrs['class'] = 'form-control'
+            if 'class' not in field.widget.attrs:
+                field.widget.attrs['class'] = 'form-control'
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.role = 'STAFF'
         if commit:
             user.save()
+            from facility.models import Staff
+            Staff.objects.create(
+                user=user, 
+                salary=self.cleaned_data.get('salary', 0.00),
+                dept=self.cleaned_data.get('dept')
+            )
         return user

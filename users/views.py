@@ -160,6 +160,8 @@ class StaffDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from facility.models import StaffAssignment
+        
         total_beds = Bed.objects.count()
         occupied_beds = Bed.objects.filter(status='OCCUPIED').count()
         occupancy_rate = (occupied_beds / total_beds * 100) if total_beds > 0 else 0
@@ -172,6 +174,13 @@ class StaffDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         ).count()
         active_admissions = Admission.objects.filter(status='ADMITTED')
         context['admissions'] = active_admissions
+        
+        # Add staff assignments
+        user = self.request.user
+        context['my_assignments'] = StaffAssignment.objects.filter(
+            staff__user=user
+        ).select_related('patient__user').order_by('-assigned_date')
+        
         return context
 
 class AdminDashboardView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -184,6 +193,7 @@ class AdminDashboardView(LoginRequiredMixin, UserPassesTestMixin, View):
         context = {
             'total_patients': User.objects.filter(role='PATIENT').count(),
             'total_doctors': User.objects.filter(role='DOCTOR').count(),
+            'total_staff': User.objects.filter(role='STAFF').count(),
             'pending_appointments': Appointment.objects.filter(status='PENDING').count(),
             'total_lab_reports': LabReport.objects.count(),
             'recent_users': User.objects.all().order_by('-date_joined')[:5],

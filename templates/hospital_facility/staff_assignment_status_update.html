@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0 fw-bold">Update Patient Outcome Status</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <p class="text-muted small mb-1">Patient</p>
+                    <h6 class="fw-bold">{{ object.patient.user.get_full_name }}</h6>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.outcome_status.id_for_label }}" class="form-label">Outcome Status</label>
+                        {{ form.outcome_status }}
+                        {% if form.outcome_status.errors %}
+                        <div class="text-danger small">{{ form.outcome_status.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">Update Status</button>
+                        <a href="{% url 'staff_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add form-select class to the status dropdown
+    document.addEventListener('DOMContentLoaded', function () {
+        const select = document.querySelector('select');
+        if (select) select.classList.add('form-select');
+    });
+</script>
+{% endblock %}

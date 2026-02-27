@@ -128,6 +128,7 @@ class Staff(models.Model):
         null=True, blank=True
     )
     salary = models.DecimalField(max_digits=10, decimal_places=2)
+    dept = models.ForeignKey('clinical.Department', on_delete=models.SET_NULL, null=True, blank=True, related_name='staff_members')
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

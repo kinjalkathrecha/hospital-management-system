@@ -2,7 +2,10 @@ from django.urls import path
 from .views import (
     RoomListView, RoomCreateView, RoomUpdateView, RoomDeleteView,
     ActiveAdmissionListView, AdmissionDetailView, DischargePatientView, AdmissionCreateView,
-    BedListView,BedCreateView,BedUpdateView,BedDeleteView
+    BedListView,BedCreateView,BedUpdateView,BedDeleteView,
+    StaffListView, StaffUpdateView, StaffDeleteView,
+    StaffAssignmentCreateView, StaffAssignmentListView,
+    StaffAssignmentUpdateView
 )
 
 urlpatterns = [
@@ -23,6 +26,14 @@ urlpatterns = [
     path('beds/add/', BedCreateView.as_view(), name='bed_create'),
     path('beds/<int:pk>/edit/',BedUpdateView.as_view(), name='bed_update'),
     path('beds/<int:pk>/delete/',BedDeleteView.as_view(), name='bed_delete'),
+
+    # staff URLs
+    path('staff/', StaffListView.as_view(), name='staff_list'),
+    path('staff/<int:pk>/edit/', StaffUpdateView.as_view(), name='staff_update'),
+    path('staff/<int:pk>/delete/', StaffDeleteView.as_view(), name='staff_delete'),
+    path('staff/assign/', StaffAssignmentCreateView.as_view(), name='staff_assignment_create'),
+    path('staff/assignments/', StaffAssignmentListView.as_view(), name='staff_assignment_list'),
+    path('staff/assignments/<int:pk>/status/', StaffAssignmentUpdateView.as_view(), name='staff_assignment_update'),
 ]
 
 

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-dark">Patient Assignments</h2>
+    <div>
+        <a href="{% url 'staff_assignment_create' %}" class="btn btn-primary me-2"><i class="fas fa-plus me-1"></i> New
+            Assignment</a>
+        <a href="{% url 'staff_dashboard' %}" class="btn btn-outline-secondary">Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="row">
+    {% for assignment in assignments %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <span
+                        class="badge {% if assignment.acuity_level >= 4 %}bg-danger{% elif assignment.acuity_level >= 3 %}bg-warning{% else %}bg-success{% endif %}">
+                        Acuity: {{ assignment.acuity_level }}
+                    </span>
+                    <small class="text-muted">{{ assignment.assigned_date|date:"M d, H:i" }}</small>
+                </div>
+
+                <h5 class="card-title fw-bold mb-1">{{ assignment.patient.user.get_full_name }}</h5>
+                <p class="text-muted small mb-3">assigned to: <strong>{{ assignment.staff.user.get_full_name }}</strong>
+                </p>
+
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-stethoscope text-primary me-2"></i>
+                        <span>{{ assignment.get_procedure_type_display }}</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-notes-medical text-info me-2"></i>
+                        <span>{{ assignment.get_outcome_status_display }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-0 py-3">
+                <div class="d-grid">
+                    <a href="{% url 'staff_assignment_update' assignment.pk %}"
+                        class="btn btn-sm btn-outline-primary">Update Status</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+            style="width: 80px; height: 80px;">
+            <i class="fas fa-clipboard-list fa-2x text-muted"></i>
+        </div>
+        <h5 class="text-muted">No active assignments found.</h5>
+        <p class="text-secondary">Click "New Assignment" to get started.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-dark">Staff Management</h2>
+    <div>
+        <a href="{% url 'add_staff' %}" class="btn btn-primary me-2"><i class="fas fa-plus me-1"></i> Add Staff
+            Member</a>
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">Back to Dashboard</a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Salary</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for staff in staff_members %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3"
+                                    style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-user-nurse"></i>
+                                </div>
+                                <span class="fw-bold">{{ staff.user.get_full_name }}</span>
+                            </div>
+                        </td>
+                        <td>{{ staff.user.email }}</td>
+                        <td>
+                            {% if staff.dept %}
+                            <span class="badge bg-info text-dark">{{ staff.dept.name }}</span>
+                            {% else %}
+                            <span class="text-muted">Not Assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>${{ staff.salary }}</td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'staff_update' staff.pk %}" class="btn btn-sm btn-outline-primary me-1"><i
+                                    class="fas fa-edit"></i></a>
+                            <a href="{% url 'staff_delete' staff.pk %}" class="btn btn-sm btn-outline-danger"><i
+                                    class="fas fa-trash"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <img src="https://via.placeholder.com/150" alt="No Staff" class="mb-3 opacity-50">
+                            <p class="text-muted">No staff members found.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

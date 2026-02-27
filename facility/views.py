@@ -6,8 +6,8 @@ from django.contrib import messages
 from .models import Room, Bed
 
 from django.utils import timezone
-from .models import Room, Bed, Admission
-from .forms import AdmissionForm,RoomForm,BedForm
+from .models import Room, Bed, Admission,Staff,StaffAssignment
+from .forms import AdmissionForm,RoomForm,BedForm,StaffAssignmentForm
 from clinical.models import MedicalRecord, LabReport
 
 class StaffRequiredMixin(UserPassesTestMixin):
@@ -174,3 +174,72 @@ class BedDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         messages.success(self.request, "Bed removed successfully!")
         return super().delete(request, *args, **kwargs)
+
+class AdminRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_authenticated and (self.request.user.is_superuser or self.request.user.role == 'ADMIN')
+
+class StaffListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
+    model = Staff
+    template_name = 'hospital_facility/staff_list.html'
+    context_object_name = 'staff_members'
+
+class StaffUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
+    model = Staff
+    fields = ['salary', 'dept']
+    template_name = 'hospital_facility/staff_form.html'
+    success_url = reverse_lazy('staff_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Staff details for {self.object.user.get_full_name()} updated successfully!")
+        return super().form_valid(form)
+
+class StaffDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
+    model = Staff
+    template_name = 'hospital_facility/staff_confirm_delete.html'
+    success_url = reverse_lazy('staff_list')
+
+    def delete(self, request, *args, **kwargs):
+        staff = self.get_object()
+        user = staff.user
+        messages.success(self.request, f"Staff member {user.get_full_name()} and their account removed successfully!")
+        # Optional: Delete the user account as well if that's the desired behavior
+        # user.delete() 
+        return super().delete(request, *args, **kwargs)
+
+class StaffAssignmentCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
+    model = StaffAssignment
+    form_class = StaffAssignmentForm
+    template_name = 'hospital_facility/staff_assignment_form.html'
+    success_url = reverse_lazy('staff_assignment_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Staff assigned successfully!")
+        return super().form_valid(form)
+
+class StaffAssignmentListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
+    model = StaffAssignment
+    template_name = 'hospital_facility/staff_assignment_list.html'
+    context_object_name = 'assignments'
+    
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser or user.role == 'ADMIN':
+            return StaffAssignment.objects.all().select_related('staff__user', 'patient__user')
+        
+        # Filter by the staff profile associated with the user
+        return StaffAssignment.objects.filter(staff__user=user).select_related('patient__user')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+class StaffAssignmentUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
+    model = StaffAssignment
+    fields = ['outcome_status']
+    template_name = 'hospital_facility/staff_assignment_status_update.html'
+    success_url = reverse_lazy('staff_dashboard')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Patient status updated successfully!")
+        return super().form_valid(form)

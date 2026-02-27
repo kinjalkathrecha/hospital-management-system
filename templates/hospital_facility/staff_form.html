@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0 fw-bold">Edit Staff Details</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <p class="text-muted small mb-1">Staff Member</p>
+                    <h6 class="fw-bold">{{ object.user.get_full_name }} ({{ object.user.username }})</h6>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <div class="text-danger small">{{ field.errors }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a href="{% url 'staff_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selects = document.querySelectorAll('select');
+        selects.forEach(select => select.classList.add('form-select'));
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => input.classList.add('form-control'));
+    });
+</script>
+{% endblock %}

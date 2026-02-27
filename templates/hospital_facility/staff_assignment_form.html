@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>New Staff Assignment</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Staff Member</label>
+                                {{ form.staff }}
+                                {% if form.staff.errors %}
+                                <div class="text-danger small">{{ form.staff.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Patient</label>
+                                {{ form.patient }}
+                                {% if form.patient.errors %}
+                                <div class="text-danger small">{{ form.patient.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Acuity Level (1-5)</label>
+                                {{ form.acuity_level }}
+                                {% if form.acuity_level.errors %}
+                                <div class="text-danger small">{{ form.acuity_level.errors }}</div>
+                                {% endif %}
+                                <div class="form-text small">1: Stable, 5: Critical</div>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Procedure Type</label>
+                                {{ form.procedure_type }}
+                                {% if form.procedure_type.errors %}
+                                <div class="text-danger small">{{ form.procedure_type.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">Initial Status</label>
+                                {{ form.outcome_status }}
+                                {% if form.outcome_status.errors %}
+                                <div class="text-danger small">{{ form.outcome_status.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                            <a href="{% url 'staff_assignment_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-4">Create Assignment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

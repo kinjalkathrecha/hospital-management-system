@@ -1,6 +1,6 @@
 from django import  forms
-from .models import Admission, Bed, Room
-
+from .models import Admission, Bed, Room,StaffAssignment, Staff
+from users.models import Patient
 class AdmissionForm(forms.ModelForm):
     class Meta:
         model = Admission
@@ -59,3 +59,18 @@ class BedForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Optional: Only show rooms that are active/available if you have that logic
         self.fields['room'].empty_label = "--- Select Room ---"
+
+# Staff Assignment Form
+
+
+class StaffAssignmentForm(forms.ModelForm):
+    class Meta:
+        model = StaffAssignment
+        fields = ['staff', 'patient', 'acuity_level', 'procedure_type', 'outcome_status']
+        widgets = {
+            'staff': forms.Select(attrs={'class': 'form-select'}),
+            'patient': forms.Select(attrs={'class': 'form-select'}),
+            'acuity_level': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 5}),
+            'procedure_type': forms.Select(attrs={'class': 'form-select'}),
+            'outcome_status': forms.Select(attrs={'class': 'form-select'}),
+        }
