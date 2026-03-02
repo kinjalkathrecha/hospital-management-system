@@ -1,5 +1,5 @@
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db.models import Sum
@@ -29,8 +29,15 @@ class PatientViewSet(ModelViewSet):
     serializer_class = PatientSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_permissions(self):
+        if self.action == 'create':
+            return [AllowAny()]
+        return super().get_permissions()
+
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            return Patient.objects.none()
         if user.role == 'PATIENT':
             return Patient.objects.filter(user=user)
         return Patient.objects.all()

@@ -3,6 +3,7 @@ from .models import Room, Bed, Admission, Bill, Payment, Staff, StaffAssignment
 from django.core import exceptions
 from django.contrib.auth.password_validation import validate_password
 from users.models import User
+from users.serializers import UserSerializer
 class RoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
@@ -29,20 +30,19 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class StaffSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
     class Meta:
         model = Staff
-        fields = '__all__'
-
-    def validate_password(self, value):
-        try:
-            validate_password(value)
-        except exceptions.ValidationError as e:
-            raise serializers.ValidationError(list(e.messages))
-        return value
+        fields = ['id', 'user', 'salary', 'dept']
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        return user
+        from django.db import transaction
+        user_data = validated_data.pop('user')
+        
+        with transaction.atomic():
+            user = User.objects.create_user(**user_data, role='STAFF')
+            staff = Staff.objects.create(user=user, **validated_data)
+        return staff
 
 class StaffAssignmentSerializer(serializers.ModelSerializer):
     class Meta:
