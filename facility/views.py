@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
-
+from permissions import IsAdmin
 from .models import (
     Room, Bed, Admission,
     Bill, Payment, Staff, StaffAssignment
@@ -65,7 +65,7 @@ class BedViewSet(ModelViewSet):
 class StaffViewSet(ModelViewSet):
     queryset = Staff.objects.select_related('user')
     serializer_class = StaffSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
 
 class StaffAssignmentViewSet(ModelViewSet):
     queryset = StaffAssignment.objects.select_related(

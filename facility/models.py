@@ -177,7 +177,6 @@ class StaffAssignment(models.Model):
         DISCHARGED = 'DISCHARGED', 'Discharged'
     staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='assignments')
     patient = models.ForeignKey('users.Patient', on_delete=models.CASCADE, related_name='staff_assignments')
-    acuity_level = models.PositiveIntegerField(help_text="Patient severity 1-5")
     procedure_type = models.CharField(
         max_length=20, 
         choices=ProcedureType.choices, 

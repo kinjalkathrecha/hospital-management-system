@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db.models import Sum
 from django.utils import timezone
-
+from permissions import IsAdmin
 from .models import User, Doctor, Patient
 from .serializers import UserSerializer, DoctorSerializer, PatientSerializer
 
@@ -12,7 +12,7 @@ from .serializers import UserSerializer, DoctorSerializer, PatientSerializer
 class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
 
 class DoctorViewSet(ModelViewSet):
     queryset = Doctor.objects.all()
