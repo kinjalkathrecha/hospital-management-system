@@ -34,7 +34,7 @@ class Admission(models.Model):
     patient = models.ForeignKey('users.Patient', on_delete=models.CASCADE, related_name='admissions')
     doctor = models.ForeignKey('users.Doctor', on_delete=models.SET_NULL, null=True, blank=True, related_name='admissions')
     room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)
-    bed = models.ForeignKey(Bed, on_delete=models.SET_NULL, null=True, blank=True)
+    bed = models.ForeignKey(Bed, on_delete=models.SET_NULL, null=True, blank=True )
     total_days = models.PositiveIntegerField(default=0)
     admit_date = models.DateTimeField(auto_now_add=True)
     discharge_date = models.DateTimeField(null=True, blank=True)
@@ -51,43 +51,39 @@ class Admission(models.Model):
     def length_of_stay(self):
         from django.utils import timezone
         
-        # Convert everything to a date object (strips time)
         admit_date = self.admit_date.date()
         end_date = self.discharge_date.date() if self.discharge_date else timezone.now().date()
         
         delta = end_date - admit_date
-        # Adding 1 ensures that admitting and discharging on the same day counts as 1 day
         return delta.days + 1
 
     def clean(self):
         from django.core.exceptions import ValidationError
-        if not self.pk and self.bed and not self.bed.status:
-             raise ValidationError(f"Bed {self.bed.bed_number} is already occupied.")
+        
+        # Check if the bed is already occupied when creating a NEW admission
+        if not self.pk and self.bed:
+            if self.bed.status == 'OCCUPIED':
+                raise ValidationError(f"Bed {self.bed.bed_number} is already occupied.")
         
         if self.discharge_date and self.discharge_date < self.admit_date:
             raise ValidationError("Discharge date cannot be earlier than admit date.")
 
+        # Unpaid bills check
         if self.status == 'DISCHARGED' or self.discharge_date:
-            # Check for unpaid bills linked to THIS admission
             unpaid_bills = self.admission_bills.filter(status='UNPAID').exists()
             if unpaid_bills:
                 raise ValidationError("Cannot discharge patient until all bills for this admission are PAID.")
 
 
-
     def save(self, *args, **kwargs):
-        # 1. Calculate the days
         from django.utils import timezone
         admit_dt = self.admit_date.date() if self.admit_date else timezone.now().date()
         disch_dt = self.discharge_date.date() if self.discharge_date else timezone.now().date()
         
         # Calculate difference
         delta = disch_dt - admit_dt
-        # If they are admitted today, (Today - Today) = 0. So we use max(1, ...) 
-        # to ensure at least 1 day is charged/counted.
         self.total_days = max(1, delta.days + 1)
 
-        # 2. Run your existing validation
         self.full_clean()
         
         # 3. Handle Bed Status
@@ -116,15 +112,12 @@ class Bill(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        # 1. Calculate Room Charge based on Admission
         if self.admission and self.admission.room:
-            # We use the total_days from admission (min 1 day)
             days = self.admission.total_days if self.admission.total_days > 0 else 1
-            price_per_day = self.admission.room.room_charge # Ensure Room model has this field
+            price_per_day = self.admission.room.room_charge 
             self.room_charge = Decimal(days) * Decimal(price_per_day)
         
-        # 2. Sum everything up
-        # We use Decimal('0.00') to avoid TypeErrors with None values
+        
         self.total_amount = (
             Decimal(str(self.room_charge or 0)) + 
             Decimal(str(self.staff_charge or 0)) + 

@@ -1,9 +1,6 @@
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
-from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
-from django.db.models import Sum
-from django.utils import timezone
 from permissions import IsAdmin,IsPatient
 from .models import User, Doctor, Patient
 from .serializers import UserSerializer, DoctorSerializer, PatientSerializer

@@ -1,5 +1,4 @@
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
@@ -28,7 +27,7 @@ class AdmissionViewSet(ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # Optional filter
+        
         status_param = self.request.query_params.get('status')
         if status_param:
             queryset = queryset.filter(status=status_param)

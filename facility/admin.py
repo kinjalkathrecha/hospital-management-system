@@ -24,9 +24,7 @@ class AdmissionAdmin(admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "bed":
-            # Only show available beds in the dropdown when creating a new admission
-            # But allow the current bed to be shown when editing
-            kwargs["queryset"] = Bed.objects.filter(status=True)
+            kwargs["queryset"] = Bed.objects.filter(status="AVAILABLE")
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
