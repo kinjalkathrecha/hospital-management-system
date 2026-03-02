@@ -80,13 +80,12 @@ class Admission(models.Model):
         is_new = self.pk is None
         
         if is_new and self.bed:
-            self.bed.status = False 
+            self.bed.status = 'OCCUPIED'
             self.bed.save()
-            
-        if self.status == 'DISCHARGED':
-            if self.bed:
-                self.bed.status = True  
-                self.bed.save()
+
+        if self.status == 'DISCHARGED' and self.bed:
+            self.bed.status = 'AVAILABLE'
+            self.bed.save()
                 
                 
         super().save(*args, **kwargs)

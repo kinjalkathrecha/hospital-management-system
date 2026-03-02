@@ -6,7 +6,7 @@ from .models import User, Doctor, Patient
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'password', 'email', 'first_name', 'last_name', 'role', 'gender', 'phone', 'birth_date']
+        fields = ['id', 'username', 'password', 'email', 'first_name', 'last_name', 'role']
         extra_kwargs = {'password': {'write_only': True}}
 
     def validate_password(self, value):
@@ -35,3 +35,10 @@ class PatientSerializer(serializers.ModelSerializer):
     
 
     
+    class Meta:
+        model = Patient
+        fields = [
+            'id', 'user', 'user_id', 'gender', 'age', 'phone', 
+            'emergency_number', 'birth_date', 'blood_group', 
+            'address', 'city', 'created_date'
+        ]

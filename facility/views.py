@@ -1,245 +1,102 @@
-from django.shortcuts import redirect, get_object_or_404
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import ListView, View, CreateView, UpdateView, DeleteView,DetailView
-from django.urls import reverse_lazy
-from django.contrib import messages
-from .models import Room, Bed
-
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
 from django.utils import timezone
-from .models import Room, Bed, Admission,Staff,StaffAssignment
-from .forms import AdmissionForm,RoomForm,BedForm,StaffAssignmentForm
-from clinical.models import MedicalRecord, LabReport
 
-class StaffRequiredMixin(UserPassesTestMixin):
-    def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.role in ['STAFF', 'ADMIN']
+from .models import (
+    Room, Bed, Admission,
+    Bill, Payment, Staff, StaffAssignment
+)
 
-class AdmissionCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
-    model = Admission
-    form_class = AdmissionForm
-    template_name = 'hospital_facility/admission_form.html'
-    success_url = reverse_lazy('active_admission_list')
+from .serializers import (
+    RoomSerializer, BedSerializer,
+    AdmissionSerializer, BillSerializer,
+    PaymentSerializer, StaffSerializer,
+    StaffAssignmentSerializer
+)
 
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        
-        bed = self.object.bed
-        bed.status = 'OCCUPIED'
-        bed.save()
-        
-        messages.success(self.request, f'Patient {self.object.patient} admitted to Bed {bed.bed_number}!')
-        return response
-    
-    
-class ActiveAdmissionListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
-    model = Admission
-    template_name = 'hospital_facility/active_admission_list.html'
-    context_object_name = 'admissions'
+
+class AdmissionViewSet(ModelViewSet):
+    queryset = Admission.objects.select_related(
+        'patient__user', 'doctor__user', 'room', 'bed'
+    )
+    serializer_class = AdmissionSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Admission.objects.filter(discharge_date__isnull=True).select_related('patient__user', 'room', 'bed')
+        queryset = super().get_queryset()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['total_occupied_beds'] = Bed.objects.filter(status='OCCUPIED').count()
-        context['discharges_today'] = Admission.objects.filter(
-            discharge_date__date=timezone.now().date()
-        ).count()
-        return context
+        # Optional filter
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
 
-class AdmissionDetailView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
-    model = Admission
-    template_name = 'hospital_facility/admission_detail.html'
-    context_object_name = 'admission'
+        return queryset
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+    @action(detail=True, methods=['post'])
+    def discharge(self, request, pk=None):
         admission = self.get_object()
-        
-        # Clinical Record Linkage: Filter by patient and date range of stay
-        end_date = admission.discharge_date or timezone.now()
-        
-        context['medical_records'] = MedicalRecord.objects.filter(
-            patient=admission.patient,
-            record_date__range=(admission.admit_date, end_date)
-        ).order_by('-record_date')
-        
-        context['lab_reports'] = LabReport.objects.filter(
-            patient=admission.patient,
-            report_date__range=(admission.admit_date, end_date)
-        ).order_by('-report_date')
-        
-        # Billing Check
-        context['unpaid_bills'] = admission.admission_bills.filter(status='UNPAID')
-        context['is_cleared'] = not context['unpaid_bills'].exists()
-        
-        return context
 
+        if admission.status == 'DISCHARGED':
+            return Response(
+                {"error": "Already discharged"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-class DischargePatientView(LoginRequiredMixin, StaffRequiredMixin, View):
-    def post(self, request, pk):
-        # 1. Get the admission record
-        admission = get_object_or_404(Admission, pk=pk)
-        
-        try:
-            # 2. Mark the admission as discharged
-            admission.status = 'DISCHARGED'
-            admission.discharge_date = timezone.now()
-            admission.save()
+        admission.status = 'DISCHARGED'
+        admission.discharge_date = timezone.now()
+        admission.save()
 
-            # 3. CRITICAL STEP: Update the Bed status
-            if admission.bed:
-                bed = admission.bed
-                bed.status = 'AVAILABLE'  # Set back to Available
-                bed.save()
-            
-            messages.success(request, f"Patient {admission.patient} discharged. Bed {bed.bed_number} is now available!")
-            
-        except Exception as e:
-            messages.error(request, f"Error during discharge: {str(e)}")
-        
-        return redirect('active_admission_list')
+        return Response({"message": "Patient discharged successfully"})
     
-class RoomListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
-    model = Room
-    template_name = 'hospital_facility/room_list.html'
-    context_object_name = 'rooms'
+class RoomViewSet(ModelViewSet):
+    queryset = Room.objects.all()
+    serializer_class = RoomSerializer
+    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return Room.objects.all().prefetch_related('beds')
-
-class RoomCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
-    model = Room
-    form_class = RoomForm
-    template_name = 'hospital_facility/room_form.html'
-    success_url = reverse_lazy('room_list')
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Room created successfully!')
-        return super().form_valid(form)
-
-class RoomUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
-    model = Room
-    form_class = RoomForm
-    template_name = 'hospital_facility/room_form.html'
-    success_url = reverse_lazy('room_list')
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Room updated successfully!')
-        return super().form_valid(form)
-
-class RoomDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
-    model = Room
-    template_name = 'hospital_facility/room_confirm_delete.html'
-    success_url = reverse_lazy('room_list')
-
-    def delete(self, request, *args, **kwargs):
-        messages.success(self.request, 'Room deleted successfully!')
-        return super().delete(request, *args, **kwargs)
+class BedViewSet(ModelViewSet):
+    queryset = Bed.objects.select_related('room')
+    serializer_class = BedSerializer
+    permission_classes = [IsAuthenticated]
 
 
-class BedListView(LoginRequiredMixin,StaffRequiredMixin,ListView):
-    model = Bed
-    template_name='hospital_facility/bed_list.html'
-    context_object_name='beds'
+class StaffViewSet(ModelViewSet):
+    queryset = Staff.objects.select_related('user')
+    serializer_class = StaffSerializer
+    permission_classes = [IsAdminUser]
 
-    def get_queryset(self):
-        return Bed.objects.select_related('room').all().order_by('room__room_number', 'bed_number')
+class StaffAssignmentViewSet(ModelViewSet):
+    queryset = StaffAssignment.objects.select_related(
+        'staff__user', 'patient__user'
+    )
+    serializer_class = StaffAssignmentSerializer
+    permission_classes = [IsAuthenticated]
 
-class BedCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
-    model = Bed
-    form_class = BedForm
-    template_name = 'hospital_facility/bed_form.html'
-    success_url = reverse_lazy('bed_list')
-
-    def form_valid(self, form):
-        messages.success(self.request, f"Bed {form.cleaned_data['bed_number']} created successfully!")
-        return super().form_valid(form)
-    
-class BedUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
-    model = Bed
-    form_class = BedForm
-    template_name = 'hospital_facility/bed_form.html'
-    success_url = reverse_lazy('bed_list')
-
-    def form_valid(self, form):
-        messages.success(self.request, "Bed details updated successfully!")
-        return super().form_valid(form)
-
-class BedDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
-    model = Bed
-    template_name = 'hospital_facility/bed_confirm_delete.html'
-    success_url = reverse_lazy('bed_list')
-
-    def delete(self, request, *args, **kwargs):
-        messages.success(self.request, "Bed removed successfully!")
-        return super().delete(request, *args, **kwargs)
-
-class AdminRequiredMixin(UserPassesTestMixin):
-    def test_func(self):
-        return self.request.user.is_authenticated and (self.request.user.is_superuser or self.request.user.role == 'ADMIN')
-
-class StaffListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
-    model = Staff
-    template_name = 'hospital_facility/staff_list.html'
-    context_object_name = 'staff_members'
-
-class StaffUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
-    model = Staff
-    fields = ['salary', 'dept']
-    template_name = 'hospital_facility/staff_form.html'
-    success_url = reverse_lazy('staff_list')
-
-    def form_valid(self, form):
-        messages.success(self.request, f"Staff details for {self.object.user.get_full_name()} updated successfully!")
-        return super().form_valid(form)
-
-class StaffDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
-    model = Staff
-    template_name = 'hospital_facility/staff_confirm_delete.html'
-    success_url = reverse_lazy('staff_list')
-
-    def delete(self, request, *args, **kwargs):
-        staff = self.get_object()
-        user = staff.user
-        messages.success(self.request, f"Staff member {user.get_full_name()} and their account removed successfully!")
-        # Optional: Delete the user account as well if that's the desired behavior
-        # user.delete() 
-        return super().delete(request, *args, **kwargs)
-
-class StaffAssignmentCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
-    model = StaffAssignment
-    form_class = StaffAssignmentForm
-    template_name = 'hospital_facility/staff_assignment_form.html'
-    success_url = reverse_lazy('staff_assignment_list')
-
-    def form_valid(self, form):
-        messages.success(self.request, "Staff assigned successfully!")
-        return super().form_valid(form)
-
-class StaffAssignmentListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
-    model = StaffAssignment
-    template_name = 'hospital_facility/staff_assignment_list.html'
-    context_object_name = 'assignments'
-    
     def get_queryset(self):
         user = self.request.user
+
         if user.is_superuser or user.role == 'ADMIN':
-            return StaffAssignment.objects.all().select_related('staff__user', 'patient__user')
-        
-        # Filter by the staff profile associated with the user
-        return StaffAssignment.objects.filter(staff__user=user).select_related('patient__user')
+            return super().get_queryset()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        return context
+        return StaffAssignment.objects.filter(
+            staff__user=user
+        )
+    
+class BillViewSet(ModelViewSet):
+    queryset = Bill.objects.select_related('patient__user')
+    serializer_class = BillSerializer
+    permission_classes = [IsAuthenticated]
 
-class StaffAssignmentUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
-    model = StaffAssignment
-    fields = ['outcome_status']
-    template_name = 'hospital_facility/staff_assignment_status_update.html'
-    success_url = reverse_lazy('staff_dashboard')
-
-    def form_valid(self, form):
-        messages.success(self.request, "Patient status updated successfully!")
-        return super().form_valid(form)
+    @action(detail=True, methods=['post'])
+    def mark_paid(self, request, pk=None):
+        bill = self.get_object()
+        bill.status = 'PAID'
+        bill.save()
+        return Response({"message": "Bill marked as PAID"})
+    
+class PaymentViewSet(ModelViewSet):
+    queryset = Payment.objects.select_related('bill')
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]

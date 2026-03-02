@@ -24,9 +24,9 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
 
     'rest_framework',
+    'rest_framework.authtoken',
     'users',
     'clinical',
     'facility',
@@ -48,7 +48,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            BASE_DIR / 'templates',
+            
             ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -110,12 +110,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
 AUTH_USER_MODEL = 'users.User'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-LOGOUT_REDIRECT_URL = '/'
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'profile_redirect'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
