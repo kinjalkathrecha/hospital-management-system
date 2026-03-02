@@ -3,7 +3,7 @@ from .models import Room, Bed, Admission, Bill, Payment, Staff, StaffAssignment
 
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):
-    list_display = ('room_number', 'dept', 'type', 'room_charge','total_days')
+    list_display = ('room_number', 'dept', 'type', 'room_charge')
     list_filter = ('type', 'dept')
 
 @admin.register(Bed)

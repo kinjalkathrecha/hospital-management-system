@@ -1,4 +1,5 @@
 from django.db import models
+from decimal import Decimal
 from django.conf import settings
 
 # Room model
@@ -7,7 +8,6 @@ class Room(models.Model):
     room_number = models.CharField(max_length=10)
     type = models.CharField(max_length=20, choices=[('GENERAL', 'General'), ('PRIVATE', 'Private'), ('ICU', 'ICU')])
     room_charge = models.DecimalField(max_digits=10, decimal_places=2)
-    total_days = models.PositiveIntegerField(default=0)
     created_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -35,7 +35,7 @@ class Admission(models.Model):
     doctor = models.ForeignKey('users.Doctor', on_delete=models.SET_NULL, null=True, blank=True, related_name='admissions')
     room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)
     bed = models.ForeignKey(Bed, on_delete=models.SET_NULL, null=True, blank=True)
-
+    total_days = models.PositiveIntegerField(default=0)
     admit_date = models.DateTimeField(auto_now_add=True)
     discharge_date = models.DateTimeField(null=True, blank=True)
     STATUS_CHOICES = [
@@ -74,11 +74,24 @@ class Admission(models.Model):
                 raise ValidationError("Cannot discharge patient until all bills for this admission are PAID.")
 
 
+
     def save(self, *args, **kwargs):
+        # 1. Calculate the days
+        from django.utils import timezone
+        admit_dt = self.admit_date.date() if self.admit_date else timezone.now().date()
+        disch_dt = self.discharge_date.date() if self.discharge_date else timezone.now().date()
+        
+        # Calculate difference
+        delta = disch_dt - admit_dt
+        # If they are admitted today, (Today - Today) = 0. So we use max(1, ...) 
+        # to ensure at least 1 day is charged/counted.
+        self.total_days = max(1, delta.days + 1)
+
+        # 2. Run your existing validation
         self.full_clean()
         
+        # 3. Handle Bed Status
         is_new = self.pk is None
-        
         if is_new and self.bed:
             self.bed.status = 'OCCUPIED'
             self.bed.save()
@@ -87,10 +100,8 @@ class Admission(models.Model):
             self.bed.status = 'AVAILABLE'
             self.bed.save()
                 
-                
         super().save(*args, **kwargs)
-
-    
+        
 
 # Bill model
 class Bill(models.Model):
@@ -104,6 +115,24 @@ class Bill(models.Model):
     status = models.CharField(max_length=20, choices=[('PAID', 'Paid'), ('UNPAID', 'Unpaid')], default='UNPAID')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        # 1. Calculate Room Charge based on Admission
+        if self.admission and self.admission.room:
+            # We use the total_days from admission (min 1 day)
+            days = self.admission.total_days if self.admission.total_days > 0 else 1
+            price_per_day = self.admission.room.room_charge # Ensure Room model has this field
+            self.room_charge = Decimal(days) * Decimal(price_per_day)
+        
+        # 2. Sum everything up
+        # We use Decimal('0.00') to avoid TypeErrors with None values
+        self.total_amount = (
+            Decimal(str(self.room_charge or 0)) + 
+            Decimal(str(self.staff_charge or 0)) + 
+            Decimal(str(self.tax or 0))
+        )
+        
+        super().save(*args, **kwargs)
+        
     def __str__(self):
         return f"Bill for {self.patient} - Amount: {self.total_amount}"
 

@@ -90,11 +90,19 @@ class BillViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     @action(detail=True, methods=['post'])
-    def mark_paid(self, request, pk=None):
+    def pay(self, request, pk=None):
         bill = self.get_object()
+        
+        if bill.status == 'PAID':
+            return Response({"message": "Bill is already paid."}, status=400)
+            
         bill.status = 'PAID'
         bill.save()
-        return Response({"message": "Bill marked as PAID"})
+        
+        return Response({
+            "message": "Bill marked as PAID",
+            "total_collected": bill.total_amount
+        })
     
 class PaymentViewSet(ModelViewSet):
     queryset = Payment.objects.select_related('bill')

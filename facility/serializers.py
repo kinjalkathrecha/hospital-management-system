@@ -23,6 +23,7 @@ class BillSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bill
         fields = '__all__'
+        read_only_fields = ['total_amount', 'room_charge', 'created_at']
 
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
