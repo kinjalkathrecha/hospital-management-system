@@ -14,7 +14,8 @@ from permissions import IsPatient, IsDoctor, IsAdmin, IsStaffOrDoctor
 class AppointmentViewSet(ModelViewSet):
     queryset = Appointment.objects.all()
     serializer_class = AppointmentSerializer
-
+    permission_classes = [IsAdmin,IsPatient]
+    
     def get_permissions(self):
         if self.action == 'create':
             return [IsPatient()]

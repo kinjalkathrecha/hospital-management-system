@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db.models import Sum
 from django.utils import timezone
-from permissions import IsAdmin
+from permissions import IsAdmin,IsPatient
 from .models import User, Doctor, Patient
 from .serializers import UserSerializer, DoctorSerializer, PatientSerializer
 
@@ -17,7 +17,7 @@ class UserViewSet(ModelViewSet):
 class DoctorViewSet(ModelViewSet):
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
 
     def get_permissions(self):
         if self.action in ['create', 'destroy']:
@@ -27,11 +27,11 @@ class DoctorViewSet(ModelViewSet):
 class PatientViewSet(ModelViewSet):
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsPatient]
 
     def get_permissions(self):
         if self.action == 'create':
-            return [AllowAny()]
+            return [IsPatient()]
         return super().get_permissions()
 
     def get_queryset(self):

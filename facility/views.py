@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
-from permissions import IsAdmin
+from permissions import IsAdmin,IsStaffOrDoctor,IsPatient
 from .models import (
     Room, Bed, Admission,
     Bill, Payment, Staff, StaffAssignment
@@ -23,7 +23,7 @@ class AdmissionViewSet(ModelViewSet):
         'patient__user', 'doctor__user', 'room', 'bed'
     )
     serializer_class = AdmissionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaffOrDoctor]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -54,12 +54,12 @@ class AdmissionViewSet(ModelViewSet):
 class RoomViewSet(ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
 
 class BedViewSet(ModelViewSet):
     queryset = Bed.objects.select_related('room')
     serializer_class = BedSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
 
 
 class StaffViewSet(ModelViewSet):
@@ -72,7 +72,7 @@ class StaffAssignmentViewSet(ModelViewSet):
         'staff__user', 'patient__user'
     )
     serializer_class = StaffAssignmentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
 
     def get_queryset(self):
         user = self.request.user
@@ -87,7 +87,7 @@ class StaffAssignmentViewSet(ModelViewSet):
 class BillViewSet(ModelViewSet):
     queryset = Bill.objects.select_related('patient__user')
     serializer_class = BillSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsPatient,IsAdmin]
 
     @action(detail=True, methods=['post'])
     def pay(self, request, pk=None):
@@ -107,4 +107,4 @@ class BillViewSet(ModelViewSet):
 class PaymentViewSet(ModelViewSet):
     queryset = Payment.objects.select_related('bill')
     serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsPatient]
